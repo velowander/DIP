@@ -167,13 +167,13 @@ public class MainActivity extends Activity {
         }
         try {
             //TODO Dates displayed for last purchase transaction make no sense - issue in splitting double into 2x 4 byte pages
+            //TODO Convert Last Purchase field to Int64Date object (this will not fix double splitting issue)
             TextView tvwDebit = (TextView) findViewById(R.id.gate_last_purchase);
             tvwDebit.setText(String.valueOf(new Date(gateEvent.lastPurchaseMs)));
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            //TODO check in & checkout longs agree with .NET but dates don't. Change .NET to Epoch time?
             TextView tvwCheckIn = (TextView) findViewById(R.id.gate_check_in);
             Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
             tvwCheckIn.setText(new Int64Date(gateEvent.checkInMs).toString());
@@ -184,10 +184,10 @@ public class MainActivity extends Activity {
             TextView tvwCheckOut = (TextView) findViewById(R.id.gate_check_out);
             Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
             tvwCheckOut.setText(new Int64Date(gateEvent.checkOutMs).toString());
+            Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
-        Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
     }
 
     public static class NdefHelper {
@@ -438,8 +438,8 @@ public class MainActivity extends Activity {
         }
 
         public static boolean writeTag(final Intent intent, final GateEvent gateEvent) {
-            /* intent - pass onNewIntent from scanning NFC tag
-            * saves gateEvent fields to card
+            /* intent - pass onNewIntent from scanning NFC tag, saves gateEvent fields to card
+            * times are stored as longs using Int64 conversion for .NET compatibility (Int64Date class)
             * Note: many fields are commented out as only the Windows .NET version modifies them */
             Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             MifareUltralight ultralight = MifareUltralight.get(myTag);
@@ -558,7 +558,6 @@ public class MainActivity extends Activity {
         /* Specialized class to deal with .NET Int64 Datetime
         WARNING: Constructor (long) and getTime() now return Int64 ticks (100ns since 01/01/0001) rather than ms since Unix Epoch
         http://msdn.microsoft.com/en-us/library/z2xf7zzk.aspx */
-        //TODO implement class
         public static final long DIFF_TICK_TO_EPOCH = 621357696000000L;
         public static final byte TICKS_PER_MS = 10;
 
