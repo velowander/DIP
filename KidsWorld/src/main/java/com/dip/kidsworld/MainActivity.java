@@ -167,23 +167,25 @@ public class MainActivity extends Activity {
         }
         try {
             //TODO Dates displayed for last purchase transaction make no sense - issue in splitting double into 2x 4 byte pages
-            //TODO Convert Last Purchase field to Int64Date object (this will not fix double splitting issue)
             TextView tvwDebit = (TextView) findViewById(R.id.gate_last_purchase);
-            tvwDebit.setText(String.valueOf(new Date(gateEvent.lastPurchaseMs)));
+            Date date = new Utils().new Int64Date(gateEvent.lastPurchaseMs);
+            tvwDebit.setText(date.toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
             TextView tvwCheckIn = (TextView) findViewById(R.id.gate_check_in);
             Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
-            tvwCheckIn.setText(new Int64Date(gateEvent.checkInMs).toString());
+            Date date = new Utils().new Int64Date(gateEvent.checkInMs);
+            tvwCheckIn.setText(date.toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
             TextView tvwCheckOut = (TextView) findViewById(R.id.gate_check_out);
             Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
-            tvwCheckOut.setText(new Int64Date(gateEvent.checkOutMs).toString());
+            Date date = new Utils().new Int64Date(gateEvent.checkInMs);
+            tvwCheckOut.setText(date.toString());
             Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
@@ -462,7 +464,7 @@ public class MainActivity extends Activity {
                 //ultralight.writePage( 9, name09);
                 ultralight.writePage(CARD_POSITION_BALANCE, ByteBuffer.allocate(4).order(KW_ENDIANNESS).putInt(gateEvent.balance).array());
                 Log.d(LOG_TAG, "Saving balance of " + gateEvent.balance);
-                Date date = new Date();
+                Date date = new Utils().new Int64Date();
                 Log.d(LOG_TAG, "writeTag: date is: " + date.toString());
                 if (writeDouble(intent, ultralight, date.getTime(), CARD_POSITION_DEBIT_TIME)) {
                     Log.d(LOG_TAG, "Saved Debit Time (long): " + String.valueOf(date.getTime()));
@@ -484,58 +486,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Deprecated
-    public static class ByteTool {
-
-        /* Some helper utilities for working with bytes and byte arrays. Also has a few string
-        * utilities (which I used for converting Strings to byte[]) */
-
-        public static String repeat(String str, int times) {
-            StringBuilder ret = new StringBuilder();
-            for (int i = 0; i < times; i++) ret.append(str);
-            return ret.toString();
-        }
-
-        public static byte[] toBytes(final int i) {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(4);
-            byteBuffer.putInt(i);
-            return byteBuffer.array();
-        }
-
-        public static byte[] toBytes(final long l) {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(8);
-            byteBuffer.putLong(l);
-            return byteBuffer.array();
-        }
-
-        public static int toInt(final byte[] bytes) {
-            if (bytes.length != 4) throw new IllegalArgumentException("byte[] must have length 4");
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            return byteBuffer.getInt();
-        }
-    }
-
-    public static class StringTool {
-        public static String padRight(final String initialString, final char filler, final int desiredLength) {
-            /* Pad initialString with filler char to the right up to desiredLength and return
-            Does not trim initialString if it is too long already */
-            if (initialString.length() >= desiredLength) return initialString;
-            int numberFiller = desiredLength - initialString.length();
-            StringBuilder stringBuilder = new StringBuilder(desiredLength);
-            stringBuilder.append(initialString);
-            Log.d(LOG_TAG, "stringBuilder length: " + stringBuilder.length());
-            for (int i = 0; i < numberFiller; i++) {
-                stringBuilder.append(filler);
-            }
-            Log.d(LOG_TAG, "stringBuilder length after append: " + stringBuilder.length());
-            return stringBuilder.toString();
-        }
-
-        public static String padRight(final String initialString, final int desiredLength) {
-            //Assumes padding is spaces
-            return padRight(initialString, ' ', desiredLength);
-        }
-    }
 
     public static class GateEvent {
         /* This class is currently only a passive container for passing information about a GateEvent,
@@ -552,23 +502,6 @@ public class MainActivity extends Activity {
         long lastPurchaseMs;
         long checkInMs;
         long checkOutMs;
-    }
-
-    public class Int64Date extends Date {
-        /* Specialized class to deal with .NET Int64 Datetime
-        WARNING: Constructor (long) and getTime() now return Int64 ticks (100ns since 01/01/0001) rather than ms since Unix Epoch
-        http://msdn.microsoft.com/en-us/library/z2xf7zzk.aspx */
-        public static final long DIFF_TICK_TO_EPOCH = 621357696000000L;
-        public static final byte TICKS_PER_MS = 10;
-
-        public Int64Date(long ticks) {
-            super((ticks - DIFF_TICK_TO_EPOCH) / TICKS_PER_MS);
-        }
-
-        @Override
-        public long getTime() {
-            return super.getTime() * TICKS_PER_MS + DIFF_TICK_TO_EPOCH;
-        }
     }
 }
 
