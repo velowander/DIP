@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TableRow android:layout_weight="0.5">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="Mode" />
+
+            <ToggleButton
+                android:id="@+id/button_mode"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:textOff="READ"
+                android:textOn="DEBIT" />
+        </TableRow>
+
+        <TableRow android:layout_weight="1">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="ID" />
+
+            <TextView
+                android:id="@+id/gate_id"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:freezesText="true"
+                android:text="--" />
+        </TableRow>
+
+        <TableRow android:layout_weight="1">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="Name" />
+
+            <TextView
+                android:id="@+id/gate_name"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:freezesText="true"
+                android:text="--" />
+
+        </TableRow>
+
+        <TableRow android:layout_weight="1">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="Balance (MOP)" />
+
+            <TextView
+                android:id="@+id/gate_balance"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:freezesText="true"
+                android:text="--" />
+
+        </TableRow>
+
+        <TableRow android:layout_weight="1">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="Last Purchase"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/gate_last_purchase"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:freezesText="true"
+                android:visibility="gone"
+                android:text="--" />
+
+        </TableRow>
+
+        <TableRow android:layout_weight="1">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="Check In" />
+
+            <TextView
+                android:id="@+id/gate_check_in"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:freezesText="true"
+                android:text="--" />
+
+        </TableRow>
+
+        <TableRow android:layout_weight="1">
+
+            <TextView
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:text="Check Out" />
+
+            <TextView
+                android:id="@+id/gate_check_out"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:freezesText="true"
+                android:text="--" />
+
+        </TableRow>
+    </TableLayout>
+
+</TableLayout>
