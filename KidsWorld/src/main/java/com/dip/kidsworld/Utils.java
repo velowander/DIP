@@ -10,6 +10,7 @@ public class Utils {
     private static final String LOG = Utils.class.getSimpleName();
 
     @Deprecated
+    @SuppressWarnings("unused")
     public static class ByteUtil {
 
         /* Some helper utilities for working with bytes and byte arrays. Also has a few string
@@ -40,7 +41,7 @@ public class Utils {
         }
     }
 
-    public class Int64Date extends Date {
+    public static class Int64Date extends Date {
         /* Specialized class to deal with .NET Int64 Datetime
         WARNING: Constructor (long) and getTime() now return Int64 ticks (100ns since 01/01/0001) rather than ms since Unix Epoch
         http://msdn.microsoft.com/en-us/library/z2xf7zzk.aspx */
@@ -60,7 +61,6 @@ public class Utils {
             return super.getTime() * TICKS_PER_MS + DIFF_TICK_TO_EPOCH;
         }
     }
-
 
     public static class StringUtil {
         public static String padRight(final String initialString, final char filler, final int desiredLength) {

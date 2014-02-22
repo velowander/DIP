@@ -168,7 +168,7 @@ public class MainActivity extends Activity {
         try {
             //TODO Dates displayed for last purchase transaction make no sense - issue in splitting double into 2x 4 byte pages
             TextView tvwDebit = (TextView) findViewById(R.id.gate_last_purchase);
-            Date date = new Utils().new Int64Date(gateEvent.lastPurchaseMs);
+            Date date = new Utils.Int64Date(gateEvent.lastPurchaseMs);
             tvwDebit.setText(date.toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
@@ -176,7 +176,7 @@ public class MainActivity extends Activity {
         try {
             TextView tvwCheckIn = (TextView) findViewById(R.id.gate_check_in);
             Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
-            Date date = new Utils().new Int64Date(gateEvent.checkInMs);
+            Date date = new Utils.Int64Date(gateEvent.checkInMs);
             tvwCheckIn.setText(date.toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
@@ -184,7 +184,7 @@ public class MainActivity extends Activity {
         try {
             TextView tvwCheckOut = (TextView) findViewById(R.id.gate_check_out);
             Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
-            Date date = new Utils().new Int64Date(gateEvent.checkInMs);
+            Date date = new Utils.Int64Date(gateEvent.checkInMs);
             tvwCheckOut.setText(date.toString());
             Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
@@ -258,10 +258,8 @@ public class MainActivity extends Activity {
                     ndefMessage = ndef.getNdefMessage();
                     record0 = ndefMessage.getRecords()[0];
                     ndef.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (FormatException e) {
-                    e.printStackTrace();
+                } catch (IOException | FormatException e) {
+                    Log.e(LOG_TAG, "IO or Format Exception connecting or getting NDEF message",e);
                 }
                 if (record0 != null) {
                     return new String(record0.getPayload());
@@ -464,7 +462,7 @@ public class MainActivity extends Activity {
                 //ultralight.writePage( 9, name09);
                 ultralight.writePage(CARD_POSITION_BALANCE, ByteBuffer.allocate(4).order(KW_ENDIANNESS).putInt(gateEvent.balance).array());
                 Log.d(LOG_TAG, "Saving balance of " + gateEvent.balance);
-                Date date = new Utils().new Int64Date();
+                Date date = new Utils.Int64Date();
                 Log.d(LOG_TAG, "writeTag: date is: " + date.toString());
                 if (writeDouble(intent, ultralight, date.getTime(), CARD_POSITION_DEBIT_TIME)) {
                     Log.d(LOG_TAG, "Saved Debit Time (long): " + String.valueOf(date.getTime()));
