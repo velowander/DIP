@@ -1,0 +1,29 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MapActivity">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_weight="0.15"
+        android:background="@android:color/darker_gray" />
+
+    <org.fanchuan.dip.simplemap.SimpleMapView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="0.7" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_weight="0.15"
+        android:background="@android:color/darker_gray" />
+
+</LinearLayout>

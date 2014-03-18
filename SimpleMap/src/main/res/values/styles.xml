@@ -1,0 +1,11 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme">
+        <!-- Customize your theme here. -->
+        <!--
+        <item name="android:background">#000000</item>
+        -->
+    </style>
+
+</resources>

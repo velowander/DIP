@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Simple Map</string>
+    <string name="action_settings">Settings</string>
+    <string name="map_activity_name">Map</string>
+    <string name="map_context_description">Test map</string>
+
+</resources>

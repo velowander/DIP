@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DIP.iml" filepath="$PROJECT_DIR$/DIP.iml" />
       <module fileurl="file://$PROJECT_DIR$/KidsWorld/KidsWorld.iml" filepath="$PROJECT_DIR$/KidsWorld/KidsWorld.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SimpleMap/SimpleMap.iml" filepath="$PROJECT_DIR$/SimpleMap/SimpleMap.iml" />
     </modules>
   </component>
 </project>

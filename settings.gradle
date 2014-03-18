@@ -1,1 +1,1 @@
-include ':KidsWorld'
+include ':KidsWorld', ':SimpleMap'
