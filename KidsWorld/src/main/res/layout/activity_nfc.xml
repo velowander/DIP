@@ -19,8 +19,8 @@
                 android:id="@+id/button_mode"
                 style="@style/EntryForm"
                 android:layout_weight="1"
-                android:textOff="@string/button_mode_off"
-                android:textOn="@string/button_mode_on" />
+                android:textOff="@string/button_mode_read"
+                android:textOn="@string/button_mode_debit" />
         </TableRow>
 
         <TableRow android:layout_weight="1">

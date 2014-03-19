@@ -14,8 +14,6 @@ import android.nfc.tech.Ndef;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -25,41 +23,27 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Date;
 
-public class MainActivity extends Activity {
+public class NfcActivity extends Activity {
 
-    private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final String LOG_TAG = NfcActivity.class.getSimpleName();
     private static NdefHelper ndefHelper;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_nfc);
 
         super.onCreate(savedInstanceState);
 
         Log.d(LOG_TAG, "onCreate");
 
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_nfc);
 
         // initialize NFC
         NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         PendingIntent nfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, this.getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
         ndefHelper = new NdefHelper(this, nfcAdapter, nfcPendingIntent);
-
-
-        // Register Android Beam callback
-        //nfcAdapter.setNdefPushMessageCallback(this, this);
-        // Register callback to listen for message-sent success
-        //nfcAdapter.setOnNdefPushCompleteCallback(this, this);
-
-        /*
-        if(getIntent().hasExtra(NfcAdapter.EXTRA_TAG)) {
-            TextView textView = (TextView) findViewById(R.id.textView0);
-            textView.setText("Hello NFC tag from home screen!");
-            //vibrate(); // signal detected tag :-)
-        };
-        */
     }
 
     @Override
@@ -85,22 +69,6 @@ public class MainActivity extends Activity {
         Log.d(LOG_TAG, "onNewIntent");
         setIntent(intent);
 
-        // *** Code below no longer needed, using Mifare UL format instead of NDEF ***
-        //String domain = MainActivity.class.getCanonicalName(); //usually your app's package name
-        //NdefRecord ndefAnswerToLife = NdefRecord.createExternal(domain, "answer_to_life", "42".getBytes());
-        //NdefRecord ndefKingofBritain = NdefRecord.createExternal(domain, "king_of_britain", "Arthur".getBytes());
-        //NdefRecord ndefConsultant = NdefRecord.createExternal(domain, "technical_consultant", "Jose".getBytes());
-        //NdefRecord[] ndefRecords = {ndefAnswerToLife,ndefKingofBritain,ndefConsultant};
-
-        //ndefHelper.simpleWrite(intent, new NdefRecord[]{ndefKingofBritain});
-        /*
-        MifareUltralightTester tester = new MifareUltralightTester();
-        tester.writeTag(intent);
-        String tagText = tester.readTag(intent);
-        if (tagText != null) {
-            Toast.makeText(this, "WOOHOO! tagText: " + tagText, Toast.LENGTH_LONG).show();
-        }
-        */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         if (button_mode.isChecked()) {
             final int DEBIT_AMOUNT = 500;
@@ -114,26 +82,6 @@ public class MainActivity extends Activity {
         } else {
             UpdateUI(intent);
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        //if (id == R.id.action_settings) {
-        //    return true;
-        //}
-        return super.onOptionsItemSelected(item);
     }
 
     public void UpdateUI(final Intent intent) {
@@ -159,7 +107,6 @@ public class MainActivity extends Activity {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            //TODO Dates displayed for last purchase transaction make no sense - issue in splitting double into 2x 4 byte pages
             TextView tvwDebit = (TextView) findViewById(R.id.gate_last_purchase);
             Date date = new Utils.Int64Date(gateEvent.lastPurchaseMs);
             tvwDebit.setText(date.toString());
@@ -168,7 +115,7 @@ public class MainActivity extends Activity {
         }
         try {
             TextView tvwCheckIn = (TextView) findViewById(R.id.gate_check_in);
-            Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
+            Log.d(LOG_TAG, "NfcActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
             Date date = new Utils.Int64Date(gateEvent.checkInMs);
             tvwCheckIn.setText(date.toString());
         } catch (Exception e) {
@@ -176,7 +123,7 @@ public class MainActivity extends Activity {
         }
         try {
             TextView tvwCheckOut = (TextView) findViewById(R.id.gate_check_out);
-            Log.d(LOG_TAG, "MainActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
+            Log.d(LOG_TAG, "NfcActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
             Date date = new Utils.Int64Date(gateEvent.checkInMs);
             tvwCheckOut.setText(date.toString());
             Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
@@ -354,13 +301,11 @@ public class MainActivity extends Activity {
             try {
                 mifare.connect();
                 int id = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_ID)).order(KW_ENDIANNESS).getInt();
-                //int id = Integer.reverseBytes(ByteBuffer.wrap(mifare.readPages(CARD_POSITION_ID)).getInt());
                 Log.d(LOG_TAG, "id: " + id);
                 String name = new String(mifare.readPages(CARD_POSITION_NAME)); //pages 6-9
                 Log.d(LOG_TAG, "name: " + name);
 
                 int balance = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_BALANCE)).order(KW_ENDIANNESS).getInt();
-                //int balance = Integer.reverseBytes(ByteBuffer.wrap(mifare.readPages(CARD_POSITION_BALANCE)).getInt());
                 Log.d(LOG_TAG, "balance: " + balance);
 
                 ByteBuffer dateBuffer = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_CHECKIN)).order(KW_ENDIANNESS);
@@ -370,7 +315,7 @@ public class MainActivity extends Activity {
                 long checkOutMs = dateBuffer.getLong();
                 Log.d(LOG_TAG, "checkOutMs (long): " + checkOutMs);
 
-                long debitTimeMs = ByteBuffer.wrap(mifare.readPages(19)).order(KW_ENDIANNESS).getLong();
+                long debitTimeMs = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_DEBIT_TIME)).order(KW_ENDIANNESS).getLong();
                 Log.d(LOG_TAG, "debitTime (long): " + debitTimeMs);
 
                 GateEvent gateEvent = new GateEvent(balance, debitTimeMs);
@@ -397,34 +342,26 @@ public class MainActivity extends Activity {
             return null;
         }
 
-        public static boolean writeDouble(final Intent intent, MifareUltralight mifare, double doubleToWrite,
-                                          int startPosition) {
-            /* Helper method for the NXP NTAG203 / Ultralight that write a double (also useful for Dates which
-            * can be saved as doubles) to the NFC card. Recall doubles are 8 bytes and pages are 4 bytes so
+        public static boolean writeLong(final MifareUltralight mifare, final long longToWrite,
+                                        final int startPosition) {
+            /* Helper method for the NXP NTAG203 / Ultralight that write a long (also useful for Dates which
+            * can be saved as longs) to the NFC card. Recall doubles are 8 bytes and pages are 4 bytes so
             * a double must split into two consecutive pages.
             * mifare must already be connected, and this method does not close it!
             * return value: boolean, successful or not */
-//          TODO split byte array when reassembled isn't the same as original (??)
             if (mifare.isConnected()) {
-                //byte[] eightBytes = ByteBuffer.allocate(8).order(KW_ENDIANNESS).putDouble(doubleToWrite).array();
-                //Log.d(LOG_TAG, "writeDouble; length of eightBytes: " + String.valueOf(eightBytes.length));
-                ByteBuffer bufferEight = ByteBuffer.allocate(8).order(KW_ENDIANNESS).putDouble(doubleToWrite);
+                ByteBuffer bufferEight = ByteBuffer.allocate(8).order(KW_ENDIANNESS).putLong(longToWrite);
                 byte[] bytesFirstPage = new byte[4];
                 byte[] bytesSecondPage = new byte[4];
                 bufferEight.rewind();
                 bufferEight.get(bytesFirstPage).get(bytesSecondPage);
-                //byte[] bytesFirstPage = Arrays.copyOfRange(eightBytes, 0, 4);
-                Log.d(LOG_TAG, "writeDouble; length of bytesFirstPage: " + String.valueOf(bytesFirstPage.length));
-                //byte[] bytesSecondPage = Arrays.copyOfRange(eightBytes, 4, 8);
-                Log.d(LOG_TAG, "writeDouble; length of bytesSecondPage: " + String.valueOf(bytesSecondPage.length));
-                byte[] testBytes = ByteBuffer.allocate(8).order(KW_ENDIANNESS).put(bytesFirstPage).put(bytesSecondPage).array();
-                Log.d(LOG_TAG, "writeDouble; arrays match?: " + String.valueOf(testBytes.equals(bufferEight.array())));
+                //byte[] testBytes = ByteBuffer.allocate(8).order(KW_ENDIANNESS).put(bytesFirstPage).put(bytesSecondPage).array();
                 try {
                     mifare.writePage(startPosition, bytesFirstPage);
                     mifare.writePage(startPosition + 1, bytesSecondPage);
                     return true;
                 } catch (IOException e) {
-                    Log.e(LOG_TAG, "writeDouble unable to write one or both pages", e);
+                    Log.e(LOG_TAG, "writeLong unable to write one or both pages", e);
                 }
                 return false;
             } else return false;
@@ -457,7 +394,7 @@ public class MainActivity extends Activity {
                 Log.d(LOG_TAG, "Saving balance of " + gateEvent.balance);
                 Date date = new Utils.Int64Date();
                 Log.d(LOG_TAG, "writeTag: date is: " + date.toString());
-                if (writeDouble(intent, ultralight, date.getTime(), CARD_POSITION_DEBIT_TIME)) {
+                if (writeLong(ultralight, date.getTime(), CARD_POSITION_DEBIT_TIME)) {
                     Log.d(LOG_TAG, "Saved Debit Time (long): " + String.valueOf(date.getTime()));
                     Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
                 }
@@ -468,7 +405,7 @@ public class MainActivity extends Activity {
             } finally {
                 try {
                     ultralight.close();
-                    Log.i(LOG_TAG, "Closed MifareUltralight write - success!!");
+                    Log.i(LOG_TAG, "Closed Mifare Ultralight write - success!!");
                 } catch (IOException e) {
                     Log.e(LOG_TAG, "IOException while closing MifareUltralight...", e);
                 }
@@ -477,8 +414,14 @@ public class MainActivity extends Activity {
         }
     }
 
-
     public static class GateEvent {
+        int id;
+        String name;
+        int balance;
+        long lastPurchaseMs;
+        long checkInMs;
+        long checkOutMs;
+
         /* This class is currently only a passive container for passing information about a GateEvent,
         * any data validation lies outside the class due to time pressure. In future, this class may
         * encapsulate its data validation. */
@@ -486,14 +429,5 @@ public class MainActivity extends Activity {
             this.balance = balance;
             this.lastPurchaseMs = lastPurchaseMs;
         }
-
-        int id;
-        String name;
-        int balance;
-        long lastPurchaseMs;
-        long checkInMs;
-        long checkOutMs;
     }
 }
-
-
