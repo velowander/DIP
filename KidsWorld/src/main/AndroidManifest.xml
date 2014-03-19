@@ -27,7 +27,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <data
-                    android:mimeType="application/org.fanchuan.gatekeeper"
+                    android:mimeType="application/com.dip.kidsworld"
                     android:scheme="vnd.android.nfc" />
             </intent-filter>
         </activity>

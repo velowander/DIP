@@ -3,16 +3,10 @@ package com.dip.kidsworld;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.nfc.FormatException;
-import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
-import android.nfc.tech.Ndef;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,7 +20,7 @@ import java.util.Date;
 public class NfcActivity extends Activity {
 
     private static final String LOG_TAG = NfcActivity.class.getSimpleName();
-    private static NdefHelper ndefHelper;
+    private static Utils.NdefHelper ndefHelper;
 
 
     @Override
@@ -43,7 +37,7 @@ public class NfcActivity extends Activity {
         // initialize NFC
         NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
         PendingIntent nfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, this.getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
-        ndefHelper = new NdefHelper(this, nfcAdapter, nfcPendingIntent);
+        ndefHelper = new Utils.NdefHelper(this, nfcAdapter, nfcPendingIntent);
     }
 
     @Override
@@ -132,130 +126,6 @@ public class NfcActivity extends Activity {
         }
     }
 
-    public static class NdefHelper {
-        protected NfcAdapter nfcAdapter;
-        protected PendingIntent nfcPendingIntent;
-        protected Activity parentActivity;
-
-        public NdefHelper(Activity parentActivity, NfcAdapter nfcAdapter, PendingIntent nfcPendingIntent) {
-            //parentActivity reference needed for NFC Foreground dispatch
-            this.nfcAdapter = nfcAdapter;
-            this.nfcPendingIntent = nfcPendingIntent;
-            this.parentActivity = parentActivity;
-        }
-
-        public void disableForegroundMode() {
-            Log.d(LOG_TAG, "disableForegroundMode");
-            nfcAdapter.disableForegroundDispatch(parentActivity);
-        }
-
-        public void enableForegroundMode() {
-            Log.d(LOG_TAG, "enableForegroundMode");
-
-            IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED); // filter for all
-
-            IntentFilter[] writeTagFilters = new IntentFilter[]{tagDetected};
-            nfcAdapter.enableForegroundDispatch(parentActivity, nfcPendingIntent, writeTagFilters, null);
-        }
-
-        @SuppressWarnings("unused")
-        private String simpleRead(final Intent intent) {
-            if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
-                Log.d(LOG_TAG, "ACTION_TAG_DISCOVERED");
-                Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                if (intent.hasExtra(NfcAdapter.EXTRA_ID)) {
-                    byte[] byteArrayExtra = intent.getByteArrayExtra(NfcAdapter.EXTRA_ID);
-                    String sTagId = "Tag id is " + toHexString(byteArrayExtra);
-                    Log.d(LOG_TAG, sTagId);
-                }
-                Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
-                Log.i(LOG_TAG, "rawMsgs is null: " + (rawMsgs == null));
-                NdefMessage message0 = (NdefMessage) rawMsgs[0];
-                NdefRecord record0 = message0.getRecords()[0];
-                return new String(record0.getPayload());
-            }
-            return null;
-        }
-
-        @SuppressWarnings("unused")
-        protected void printTagId(final Intent intent) {
-            if (intent.hasExtra(NfcAdapter.EXTRA_ID)) {
-                byte[] byteArrayExtra = intent.getByteArrayExtra(NfcAdapter.EXTRA_ID);
-                Log.d(LOG_TAG, "Tag id is " + toHexString(byteArrayExtra));
-                Toast.makeText(parentActivity, toHexString(byteArrayExtra), Toast.LENGTH_SHORT).show();
-            }
-        }
-
-        private String simpleRead2(final Intent intent) {
-            if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
-                Log.d(LOG_TAG, "ACTION_TAG_DISCOVERED");
-                Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                Ndef ndef = Ndef.get(myTag);
-                NdefMessage ndefMessage;
-                NdefRecord record0 = null;
-                try {
-                    ndef.connect();
-                    ndefMessage = ndef.getNdefMessage();
-                    record0 = ndefMessage.getRecords()[0];
-                    ndef.close();
-                } catch (IOException | FormatException e) {
-                    Log.e(LOG_TAG, "IO or Format Exception connecting or getting NDEF message",e);
-                }
-                if (record0 != null) {
-                    return new String(record0.getPayload());
-                }
-            }
-            return null;
-        }
-
-        private void simpleWrite(final Intent intent, NdefRecord[] ndefRecords) {
-            //Did you remember to setIntent() to the new intent before calling?
-            NdefMessage ndefMessage = new NdefMessage(ndefRecords);
-            if (ndefRecords == null) {
-                Log.w(LOG_TAG, "ndefRecords is null");
-            }
-            Ndef ndef;
-
-            if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
-                Log.d(LOG_TAG, "A tag was scanned!");
-                Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                //write(message, intent);
-                Toast.makeText(parentActivity, "LOG_TAG: " + myTag.toString(), Toast.LENGTH_SHORT).show();
-                ndef = Ndef.get(myTag);
-
-                try {
-                    if (!ndef.isConnected()) {
-                        ndef.connect();
-                    }
-                    ndef.writeNdefMessage(ndefMessage);
-                    ndef.close();
-                    Log.i(LOG_TAG, "Write complete!");
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "writeNDefMessage IOException", e);
-                } catch (FormatException e) {
-                    Log.e(LOG_TAG, "writeNDefMessage FormatException", e);
-                } catch (NullPointerException e) {
-                    Log.e(LOG_TAG, "writeNDefMessage NullPointerException", e);
-                }
-            }
-        }
-
-        /**
-         * Converts the byte array to HEX string.
-         *
-         * @param buffer the buffer.
-         * @return the HEX string.
-         */
-        public String toHexString(byte[] buffer) {
-            StringBuilder sb = new StringBuilder();
-            for (byte b : buffer)
-                sb.append(String.format("%02x ", b & 0xff));
-            return sb.toString().toUpperCase();
-        }
-
-
-    }
-
     public static class KidsWorldNtag203 {
         /* Helper class for reading and writing Kids World data to/from Mifare Ultralight card
         * The code is specific to the Mifare Ultralight which has 4 byte pages, reading from
@@ -264,12 +134,11 @@ public class NfcActivity extends Activity {
         private static final String LOG_TAG = KidsWorldNtag203.class.getSimpleName();
 
         //Constants for reading and writing to Mifare NTAG203
-        private static final ByteOrder KW_ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
-        private static final short CARD_POSITION_ID = 4;
-        private static final short CARD_POSITION_NAME = 6; // Uses all 4 pages for 16 byte name
-        private static final short CARD_POSITION_BALANCE = 12;
-        private static final short CARD_POSITION_CHECKIN = 14;// Uses all 4 pages for 2 dates (stored as doubles)
-        private static final short CARD_POSITION_DEBIT_TIME = 19;
+        private static final short OFFSET_ID = 4;
+        private static final short OFFSET_NAME = 6; // Uses all 4 pages for 16 byte name
+        private static final short OFFSET_BALANCE = 12;
+        private static final short OFFSET_CHECKIN = 14;// Uses all 4 pages for 2 dates (stored as doubles)
+        private static final short OFFSET_DEBIT_TIME = 19;
 
         public static int readTagBalance(final Intent intent) {
             /*Reads only the balance from the card, doesn't get all the fields */
@@ -279,7 +148,7 @@ public class NfcActivity extends Activity {
             int balance = -1;
             try {
                 mifare.connect();
-                balance = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_BALANCE)).order(KW_ENDIANNESS).getInt();
+                balance = ByteBuffer.wrap(mifare.readPages(OFFSET_BALANCE)).order(Utils.Ntag203.ENDIANNESS).getInt();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -300,22 +169,22 @@ public class NfcActivity extends Activity {
             MifareUltralight mifare = MifareUltralight.get(myTag);
             try {
                 mifare.connect();
-                int id = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_ID)).order(KW_ENDIANNESS).getInt();
+                int id = ByteBuffer.wrap(mifare.readPages(OFFSET_ID)).order(Utils.Ntag203.ENDIANNESS).getInt();
                 Log.d(LOG_TAG, "id: " + id);
-                String name = new String(mifare.readPages(CARD_POSITION_NAME)); //pages 6-9
+                String name = new String(mifare.readPages(OFFSET_NAME)); //pages 6-9
                 Log.d(LOG_TAG, "name: " + name);
 
-                int balance = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_BALANCE)).order(KW_ENDIANNESS).getInt();
+                int balance = ByteBuffer.wrap(mifare.readPages(OFFSET_BALANCE)).order(Utils.Ntag203.ENDIANNESS).getInt();
                 Log.d(LOG_TAG, "balance: " + balance);
 
-                ByteBuffer dateBuffer = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_CHECKIN)).order(KW_ENDIANNESS);
+                ByteBuffer dateBuffer = ByteBuffer.wrap(mifare.readPages(OFFSET_CHECKIN)).order(Utils.Ntag203.ENDIANNESS);
                 long checkInMs = dateBuffer.getLong();
                 Log.d(LOG_TAG, "checkInMs (long): " + checkInMs);
 
                 long checkOutMs = dateBuffer.getLong();
                 Log.d(LOG_TAG, "checkOutMs (long): " + checkOutMs);
 
-                long debitTimeMs = ByteBuffer.wrap(mifare.readPages(CARD_POSITION_DEBIT_TIME)).order(KW_ENDIANNESS).getLong();
+                long debitTimeMs = ByteBuffer.wrap(mifare.readPages(OFFSET_DEBIT_TIME)).order(Utils.Ntag203.ENDIANNESS).getLong();
                 Log.d(LOG_TAG, "debitTime (long): " + debitTimeMs);
 
                 GateEvent gateEvent = new GateEvent(balance, debitTimeMs);
@@ -342,31 +211,6 @@ public class NfcActivity extends Activity {
             return null;
         }
 
-        public static boolean writeLong(final MifareUltralight mifare, final long longToWrite,
-                                        final int startPosition) {
-            /* Helper method for the NXP NTAG203 / Ultralight that write a long (also useful for Dates which
-            * can be saved as longs) to the NFC card. Recall doubles are 8 bytes and pages are 4 bytes so
-            * a double must split into two consecutive pages.
-            * mifare must already be connected, and this method does not close it!
-            * return value: boolean, successful or not */
-            if (mifare.isConnected()) {
-                ByteBuffer bufferEight = ByteBuffer.allocate(8).order(KW_ENDIANNESS).putLong(longToWrite);
-                byte[] bytesFirstPage = new byte[4];
-                byte[] bytesSecondPage = new byte[4];
-                bufferEight.rewind();
-                bufferEight.get(bytesFirstPage).get(bytesSecondPage);
-                //byte[] testBytes = ByteBuffer.allocate(8).order(KW_ENDIANNESS).put(bytesFirstPage).put(bytesSecondPage).array();
-                try {
-                    mifare.writePage(startPosition, bytesFirstPage);
-                    mifare.writePage(startPosition + 1, bytesSecondPage);
-                    return true;
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "writeLong unable to write one or both pages", e);
-                }
-                return false;
-            } else return false;
-        }
-
         public static boolean writeTag(final Intent intent, final GateEvent gateEvent) {
             /* intent - pass onNewIntent from scanning NFC tag, saves gateEvent fields to card
             * times are stored as longs using Int64 conversion for .NET compatibility (Int64Date class)
@@ -390,15 +234,13 @@ public class NfcActivity extends Activity {
                 //ultralight.writePage( 7, name07);
                 //ultralight.writePage( 8, name08);
                 //ultralight.writePage( 9, name09);
-                ultralight.writePage(CARD_POSITION_BALANCE, ByteBuffer.allocate(4).order(KW_ENDIANNESS).putInt(gateEvent.balance).array());
+                ultralight.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(gateEvent.balance).array());
                 Log.d(LOG_TAG, "Saving balance of " + gateEvent.balance);
                 Date date = new Utils.Int64Date();
                 Log.d(LOG_TAG, "writeTag: date is: " + date.toString());
-                if (writeLong(ultralight, date.getTime(), CARD_POSITION_DEBIT_TIME)) {
-                    Log.d(LOG_TAG, "Saved Debit Time (long): " + String.valueOf(date.getTime()));
-                    Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
-                }
-
+                Utils.Ntag203.writeLong(ultralight, date.getTime(), OFFSET_DEBIT_TIME);
+                Log.d(LOG_TAG, "Saved Debit Time (long): " + String.valueOf(date.getTime()));
+                Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
                 return true;
             } catch (IOException e) {
                 Log.e(LOG_TAG, "IOException while writing MifareUltralight...", e);
