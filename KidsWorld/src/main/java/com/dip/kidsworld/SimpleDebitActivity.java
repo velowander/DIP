@@ -17,9 +17,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Date;
 
-public class NfcActivity extends Activity {
+public class SimpleDebitActivity extends Activity {
 
-    private static final String LOG_TAG = NfcActivity.class.getSimpleName();
+    private static final String LOG_TAG = SimpleDebitActivity.class.getSimpleName();
     private static Utils.NdefHelper ndefHelper;
 
 
@@ -63,17 +63,32 @@ public class NfcActivity extends Activity {
         Log.d(LOG_TAG, "onNewIntent");
         setIntent(intent);
 
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction()))
+            nfcOperation(intent); //not an NFC tag, nothing to do!
+    }
+
+    protected void nfcOperation(Intent intent) {
+        /* Read or write (depending on button_mode) from the NFC card
+        * For this sample application, deducts the constant DEBIT_AMOUNT from */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         if (button_mode.isChecked()) {
+            //Debit mode
             final int DEBIT_AMOUNT = 500;
             Log.d(LOG_TAG, "Debit Tag mode");
             int balance = KidsWorldNtag203.readTagBalance(intent);
-            boolean writeOk = KidsWorldNtag203.writeTag(intent, new GateEvent(balance -= DEBIT_AMOUNT, new Date().getTime()));
-            if (writeOk) {
-                UpdateUI(intent);
-                Toast.makeText(this, "Write complete", Toast.LENGTH_LONG).show();
+            boolean writeOk = false;
+            if (balance >= DEBIT_AMOUNT) {
+                writeOk = KidsWorldNtag203.writeTag(intent, new GateEvent(balance -= DEBIT_AMOUNT, new Utils.Int64Date().getTime()));
+                if (writeOk) {
+                    UpdateUI(intent);
+                    Toast.makeText(this, "Debit complete", Toast.LENGTH_LONG).show();
+                } else
+                    Toast.makeText(this, "Unable to process transaction", Toast.LENGTH_LONG).show();
             }
+            //Card doesn't have enough money!!
+            else Toast.makeText(this, "Insufficient balance!", Toast.LENGTH_LONG).show();
         } else {
+            //Read mode
             UpdateUI(intent);
         }
     }
@@ -86,7 +101,7 @@ public class NfcActivity extends Activity {
             TextView tvwId = (TextView) findViewById(R.id.gate_id);
             tvwId.setText(String.valueOf(gateEvent.id));
         } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception" ,e);
+            Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
             TextView tvwName = (TextView) findViewById(R.id.gate_name);
@@ -109,7 +124,7 @@ public class NfcActivity extends Activity {
         }
         try {
             TextView tvwCheckIn = (TextView) findViewById(R.id.gate_check_in);
-            Log.d(LOG_TAG, "NfcActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
+            Log.d(LOG_TAG, "SimpleDebitActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
             Date date = new Utils.Int64Date(gateEvent.checkInMs);
             tvwCheckIn.setText(date.toString());
         } catch (Exception e) {
@@ -117,7 +132,7 @@ public class NfcActivity extends Activity {
         }
         try {
             TextView tvwCheckOut = (TextView) findViewById(R.id.gate_check_out);
-            Log.d(LOG_TAG, "NfcActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
+            Log.d(LOG_TAG, "SimpleDebitActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
             Date date = new Utils.Int64Date(gateEvent.checkInMs);
             tvwCheckOut.setText(date.toString());
             Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();

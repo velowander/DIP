@@ -38,7 +38,7 @@ public class WriteTest extends Activity {
         Log.d(LOG_TAG, "onNewIntent");
         setIntent(intent);
 
-        nfcOperation(intent);
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) nfcOperation(intent);
     }
 
     @Override

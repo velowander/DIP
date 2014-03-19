@@ -198,35 +198,13 @@ public class Utils {
                 }
             }
         }
-
-        public static class StringUtil {
-            public static String padRight(final String initialString, final char filler, final int desiredLength) {
-            /* Pad initialString with filler char to the right up to desiredLength and return
-            Does not trim initialString if it is too long already */
-                if (initialString.length() >= desiredLength) return initialString;
-                int numberFiller = desiredLength - initialString.length();
-                StringBuilder stringBuilder = new StringBuilder(desiredLength);
-                stringBuilder.append(initialString);
-                Log.d(LOG, "stringBuilder length: " + stringBuilder.length());
-                for (int i = 0; i < numberFiller; i++) {
-                    stringBuilder.append(filler);
-                }
-                Log.d(LOG, "stringBuilder length after append: " + stringBuilder.length());
-                return stringBuilder.toString();
-            }
-
-        public static String padRight(final String initialString, final int desiredLength) {
-            //Assumes padding is spaces
-            return padRight(initialString, ' ', desiredLength);
-        }
-        }
-
-
     }
 
     public static class Ntag203 {
-        /* reading and writing methods specific to the Ntag203 card but not specific to KidsWorld*/
         public static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
+        /* reading and writing methods specific to the Ntag203 card but not specific to KidsWorld*/
+        @SuppressWarnings("unused")
+        private static final String LOG_TAG = Ntag203.class.getSimpleName();
 
         public static long readLong(final MifareUltralight mifare, final int startPosition) throws IOException {
         /* Helper method for the NXP NTAG203 / Ultralight that reads a long (also useful for Dates which
@@ -270,6 +248,28 @@ public class Utils {
             } finally {
                 if (closeMifareOnExit && mifare.isConnected()) mifare.close();
             }
+        }
+    }
+
+    public static class StringUtil {
+        public static String padRight(final String initialString, final char filler, final int desiredLength) {
+        /* Pad initialString with filler char to the right up to desiredLength and return
+        Does not trim initialString if it is too long already */
+            if (initialString.length() >= desiredLength) return initialString;
+            int numberFiller = desiredLength - initialString.length();
+            StringBuilder stringBuilder = new StringBuilder(desiredLength);
+            stringBuilder.append(initialString);
+            Log.d(LOG, "stringBuilder length: " + stringBuilder.length());
+            for (int i = 0; i < numberFiller; i++) {
+                stringBuilder.append(filler);
+            }
+            Log.d(LOG, "stringBuilder length after append: " + stringBuilder.length());
+            return stringBuilder.toString();
+        }
+
+        public static String padRight(final String initialString, final int desiredLength) {
+            //Assumes padding is spaces
+            return padRight(initialString, ' ', desiredLength);
         }
     }
 }
