@@ -58,21 +58,32 @@ public class Utils {
 
     public static class Int64Date extends Date {
         /* Specialized class to deal with .NET Int64 Datetime
-        WARNING: Constructor (long) and getTime() now return Int64 ticks (100ns since 01/01/0001) rather than ms since Unix Epoch
-        http://msdn.microsoft.com/en-us/library/z2xf7zzk.aspx */
+        * The internal representation of the time is the standard java.util.Date but it overrides the constructor
+        * to accept the datetime as a long in 100 microsecond ticks since January 01, 1 AD (http://msdn.microsoft.com/en-us/library/z2xf7zzk.aspx)
+        * rather than milliseconds since January 1, 1970. The original constructor is also available as
+        * Int64Date(long, boolean) - to create using epoch ms, the boolean flag is not used
+        * The standard getTime() method is still available; use getTicks() to get the time in ticks
+         */
         public static final long DIFF_TICK_TO_EPOCH = 621357696000000L;
         public static final byte TICKS_PER_MS = 10;
 
         public Int64Date() {
+            //Default constructor from standard java.util.Date
             super();
         }
 
         public Int64Date(long ticks) {
+            /* Constructs a standard Date object using time measured in ticks */
             super((ticks - DIFF_TICK_TO_EPOCH) / TICKS_PER_MS);
         }
 
-        @Override
-        public long getTime() {
+        public Int64Date(long epochMs, boolean unused) {
+            /* The standard constructor from java.util.Date to create based on ms since Epoch
+            * The boolean flag is unused and only to distinguish vs the (long ticks) constructor */
+            super(epochMs);
+        }
+
+        public long getTicks() {
             return super.getTime() * TICKS_PER_MS + DIFF_TICK_TO_EPOCH;
         }
     }
@@ -251,6 +262,7 @@ public class Utils {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class StringUtil {
         public static String padRight(final String initialString, final char filler, final int desiredLength) {
         /* Pad initialString with filler char to the right up to desiredLength and return

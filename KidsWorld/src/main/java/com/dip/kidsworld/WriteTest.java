@@ -73,11 +73,7 @@ public class WriteTest extends Activity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        return item.getItemId() == R.id.action_settings || super.onOptionsItemSelected(item);
     }
 
     public void nfcOperation(Intent intent) {
@@ -88,8 +84,15 @@ public class WriteTest extends Activity {
         MifareUltralight mifare = MifareUltralight.get(myTag);
         EditText editOffset = (EditText) findViewById(R.id.position_offset);
         EditText editLong = (EditText) findViewById(R.id.long_testing);
-        long longTesting = Long.parseLong(editLong.getText().toString());
-        int offset = Integer.parseInt(editOffset.getText().toString());
+        long longTesting;
+        int offset;
+        try {
+            longTesting = Long.parseLong(editLong.getText().toString());
+            offset = Integer.parseInt(editOffset.getText().toString());
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "The testing value and offset must be numbers", Toast.LENGTH_SHORT).show();
+            return;
+        }
         try {
             mifare.connect();
         } catch (IOException e) {
@@ -120,7 +123,7 @@ public class WriteTest extends Activity {
                 Log.d(LOG_TAG, text);
             } else {
                 Log.d(LOG_TAG, "Number read is: " + readLong);
-                Toast.makeText(this, "Number does not match!!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Number does not match. Number read is: " + readLong, Toast.LENGTH_LONG).show();
             }
         }
         try {

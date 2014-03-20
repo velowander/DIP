@@ -21,7 +21,8 @@
             android:layout_weight="2"
             android:hint="Number to encode"
             android:inputType="number"
-            android:numeric="integer" />
+            android:numeric="integer"
+            android:text="@string/testing_number_default" />
 
         <requestFocus />
 
@@ -32,7 +33,8 @@
             android:layout_weight="1"
             android:hint="Position"
             android:inputType="number"
-            android:numeric="integer" />
+            android:numeric="integer"
+            android:text="@string/offset_default" />
 
     </LinearLayout>
 

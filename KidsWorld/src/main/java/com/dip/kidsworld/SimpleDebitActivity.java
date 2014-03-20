@@ -73,12 +73,12 @@ public class SimpleDebitActivity extends Activity {
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         if (button_mode.isChecked()) {
             //Debit mode
-            final int DEBIT_AMOUNT = 500;
             Log.d(LOG_TAG, "Debit Tag mode");
             int balance = KidsWorldNtag203.readTagBalance(intent);
             boolean writeOk = false;
-            if (balance >= DEBIT_AMOUNT) {
-                writeOk = KidsWorldNtag203.writeTag(intent, new GateEvent(balance -= DEBIT_AMOUNT, new Utils.Int64Date().getTime()));
+            KidsCard kidsCard = new KidsCard(balance);
+            if (kidsCard.buy(new Product())) {
+                writeOk = KidsWorldNtag203.writeTag(intent, kidsCard);
                 if (writeOk) {
                     UpdateUI(intent);
                     Toast.makeText(this, "Debit complete", Toast.LENGTH_LONG).show();
@@ -96,44 +96,44 @@ public class SimpleDebitActivity extends Activity {
     public void UpdateUI(final Intent intent) {
         //intent - pass from onNewIntent, presence of NFC tag
         Log.d(LOG_TAG, "Update UI from read");
-        GateEvent gateEvent = KidsWorldNtag203.readTag(intent);
+        KidsCard gateEvent = KidsWorldNtag203.readTag(intent);
         try {
-            TextView tvwId = (TextView) findViewById(R.id.gate_id);
+            TextView tvwId = (TextView) findViewById(R.id.client_id);
             tvwId.setText(String.valueOf(gateEvent.id));
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            TextView tvwName = (TextView) findViewById(R.id.gate_name);
+            TextView tvwName = (TextView) findViewById(R.id.client_name);
             tvwName.setText(gateEvent.name);
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            TextView tvwBalance = (TextView) findViewById(R.id.gate_balance);
-            tvwBalance.setText(String.valueOf(gateEvent.balance / 100.));
+            TextView tvwBalance = (TextView) findViewById(R.id.balance);
+            tvwBalance.setText(String.valueOf(gateEvent.getBalance() / 100.));
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            TextView tvwDebit = (TextView) findViewById(R.id.gate_last_purchase);
-            Date date = new Utils.Int64Date(gateEvent.lastPurchaseMs);
+            TextView tvwDebit = (TextView) findViewById(R.id.last_purchase);
+            Date date = new Utils.Int64Date(gateEvent.getLastPurchaseTicks());
             tvwDebit.setText(date.toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            TextView tvwCheckIn = (TextView) findViewById(R.id.gate_check_in);
-            Log.d(LOG_TAG, "SimpleDebitActivity.UpdateUI(); checkInMs: " + gateEvent.checkInMs);
-            Date date = new Utils.Int64Date(gateEvent.checkInMs);
+            TextView tvwCheckIn = (TextView) findViewById(R.id.check_in);
+            Log.d(LOG_TAG, "SimpleDebitActivity.UpdateUI(); checkInTicks: " + gateEvent.getCheckInTicks());
+            Date date = new Utils.Int64Date(gateEvent.getCheckInTicks());
             tvwCheckIn.setText(date.toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         try {
-            TextView tvwCheckOut = (TextView) findViewById(R.id.gate_check_out);
-            Log.d(LOG_TAG, "SimpleDebitActivity.UpdateUI(); checkOutMs: " + gateEvent.checkOutMs);
-            Date date = new Utils.Int64Date(gateEvent.checkInMs);
+            TextView tvwCheckOut = (TextView) findViewById(R.id.check_out);
+            Log.d(LOG_TAG, "SimpleDebitActivity.UpdateUI(); checkOutTicks: " + gateEvent.getCheckOutTicks());
+            Date date = new Utils.Int64Date(gateEvent.getCheckOutTicks());
             tvwCheckOut.setText(date.toString());
             Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
@@ -178,7 +178,7 @@ public class SimpleDebitActivity extends Activity {
             return balance;
         }
 
-        public static GateEvent readTag(final Intent intent) {
+        public static KidsCard readTag(final Intent intent) {
             Log.d(LOG_TAG, "Native Byte Ordering is Little Endian? " + String.valueOf(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN));
             Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             MifareUltralight mifare = MifareUltralight.get(myTag);
@@ -186,6 +186,7 @@ public class SimpleDebitActivity extends Activity {
                 mifare.connect();
                 int id = ByteBuffer.wrap(mifare.readPages(OFFSET_ID)).order(Utils.Ntag203.ENDIANNESS).getInt();
                 Log.d(LOG_TAG, "id: " + id);
+
                 String name = new String(mifare.readPages(OFFSET_NAME)); //pages 6-9
                 Log.d(LOG_TAG, "name: " + name);
 
@@ -193,22 +194,22 @@ public class SimpleDebitActivity extends Activity {
                 Log.d(LOG_TAG, "balance: " + balance);
 
                 ByteBuffer dateBuffer = ByteBuffer.wrap(mifare.readPages(OFFSET_CHECKIN)).order(Utils.Ntag203.ENDIANNESS);
-                long checkInMs = dateBuffer.getLong();
-                Log.d(LOG_TAG, "checkInMs (long): " + checkInMs);
+                long checkInTicks = dateBuffer.getLong();
+                Log.d(LOG_TAG, "checkInTicks (long): " + checkInTicks);
 
-                long checkOutMs = dateBuffer.getLong();
-                Log.d(LOG_TAG, "checkOutMs (long): " + checkOutMs);
+                long checkOutTicks = dateBuffer.getLong();
+                Log.d(LOG_TAG, "checkOutTicks (long): " + checkOutTicks);
 
-                long debitTimeMs = ByteBuffer.wrap(mifare.readPages(OFFSET_DEBIT_TIME)).order(Utils.Ntag203.ENDIANNESS).getLong();
-                Log.d(LOG_TAG, "debitTime (long): " + debitTimeMs);
+                long debitTicks = ByteBuffer.wrap(mifare.readPages(OFFSET_DEBIT_TIME)).order(Utils.Ntag203.ENDIANNESS).getLong();
+                Log.d(LOG_TAG, "debitTicks (long): " + debitTicks);
 
-                GateEvent gateEvent = new GateEvent(balance, debitTimeMs);
-                gateEvent.id = id;
-                gateEvent.name = name;
-                gateEvent.checkInMs = checkInMs;
-                gateEvent.checkOutMs = checkOutMs;
+                KidsCard kidsCard = new KidsCard(balance);
+                kidsCard.id = id;
+                kidsCard.name = name;
+                kidsCard.checkInTicks = checkInTicks;
+                kidsCard.checkOutTicks = checkOutTicks;
 
-                return gateEvent;
+                return kidsCard;
 
             } catch (IOException e) {
                 Log.e(LOG_TAG, "IOException while writing MifareUltralight message...", e);
@@ -226,16 +227,16 @@ public class SimpleDebitActivity extends Activity {
             return null;
         }
 
-        public static boolean writeTag(final Intent intent, final GateEvent gateEvent) {
-            /* intent - pass onNewIntent from scanning NFC tag, saves gateEvent fields to card
+        public static boolean writeTag(final Intent intent, final KidsCard kidsCard) {
+            /* intent - pass onNewIntent from scanning NFC tag, saves kidsCard fields to card
             * times are stored as longs using Int64 conversion for .NET compatibility (Int64Date class)
             * Note: many fields are commented out as only the Windows .NET version modifies them */
             Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             MifareUltralight ultralight = MifareUltralight.get(myTag);
 
-            //if (gateEvent.name.length() > 16) { throw new IllegalArgumentException("Max name length: 16"); }
+            //if (kidsCard.name.length() > 16) { throw new IllegalArgumentException("Max name length: 16"); }
             //pad name to fixed length of 16 bytes, makes it easier to encode
-            //String namePadded = padRight(gateEvent.name, ' ' , 16);
+            //String namePadded = padRight(kidsCard.name, ' ' , 16);
             //Log.d(LOG_TAG, "namePadded length: " + namePadded.length());
             //Log.d(LOG_TAG, "namePadded:<string>" + namePadded + "</string>" );
             //byte[] name06 = namePadded.substring( 0, 4).getBytes(Charset.forName(myCharset));
@@ -244,17 +245,17 @@ public class SimpleDebitActivity extends Activity {
             //byte[] name09 = namePadded.substring(12,16).getBytes(Charset.forName(myCharset));
             try {
                 ultralight.connect();
-                //ultralight.writePage(4, ByteBuffer.allocate(4).order(KW_ENDIANNESS).putInt(gateEvent.id).array());
+                //ultralight.writePage(4, ByteBuffer.allocate(4).order(KW_ENDIANNESS).putInt(kidsCard.id).array());
                 //ultralight.writePage( 6, name06);
                 //ultralight.writePage( 7, name07);
                 //ultralight.writePage( 8, name08);
                 //ultralight.writePage( 9, name09);
-                ultralight.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(gateEvent.balance).array());
-                Log.d(LOG_TAG, "Saving balance of " + gateEvent.balance);
+                ultralight.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(kidsCard.balance).array());
+                Log.d(LOG_TAG, "Saving balance of " + kidsCard.getBalance());
                 Date date = new Utils.Int64Date();
                 Log.d(LOG_TAG, "writeTag: date is: " + date.toString());
-                Utils.Ntag203.writeLong(ultralight, date.getTime(), OFFSET_DEBIT_TIME);
-                Log.d(LOG_TAG, "Saved Debit Time (long): " + String.valueOf(date.getTime()));
+                Utils.Ntag203.writeLong(ultralight, new Utils.Int64Date().getTicks(), OFFSET_DEBIT_TIME);
+                Log.d(LOG_TAG, "Saved Debit Ticks (long): " + String.valueOf(date.getTime()));
                 Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
                 return true;
             } catch (IOException e) {
@@ -271,20 +272,55 @@ public class SimpleDebitActivity extends Activity {
         }
     }
 
-    public static class GateEvent {
-        int id;
-        String name;
-        int balance;
-        long lastPurchaseMs;
-        long checkInMs;
-        long checkOutMs;
+    public static class KidsCard {
+        private int id;
+        private String name;
+        private int balance;
+        private long lastPurchaseTicks;
+        private long checkInTicks;
+        private long checkOutTicks;
 
-        /* This class is currently only a passive container for passing information about a GateEvent,
-        * any data validation lies outside the class due to time pressure. In future, this class may
-        * encapsulate its data validation. */
-        public GateEvent(int balance, long lastPurchaseMs) {
+        public KidsCard(int balance) {
             this.balance = balance;
-            this.lastPurchaseMs = lastPurchaseMs;
+        }
+
+        public boolean buy(Product product) {
+            int price = product.getPrice();
+            if (balance >= price) {
+                balance -= price;
+                lastPurchaseTicks = new Utils.Int64Date().getTicks();
+                return true;
+            }
+            return false;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public int getBalance() {
+            return balance;
+        }
+
+        public long getCheckInTicks() {
+            /* Returns the check in time in Intel64 ticks */
+            return checkInTicks;
+        }
+
+        public long getCheckOutTicks() {
+            /* Returns the check out time in Intel64 ticks */
+            return checkOutTicks;
+        }
+
+        public long getLastPurchaseTicks() {
+            /* Returns the last purchase time in Intel64 ticks */
+            return lastPurchaseTicks;
+        }
+    }
+
+    public static class Product {
+        public int getPrice() {
+            return 500;
         }
     }
 }
