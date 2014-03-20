@@ -236,6 +236,23 @@ public class Utils {
             return result;
         }
 
+        public static void writeInt(final MifareUltralight mifare, final int intToWrite,
+                                    final int startPosition) throws IOException {
+            /* Helper method for the NXP NTAG203 / Ultralight that writes a int */
+            boolean closeMifareOnExit = false;
+            try {
+                if (!mifare.isConnected()) {
+                    mifare.connect();
+                    closeMifareOnExit = true;
+                }
+                byte[] bytesToWrite = ByteBuffer.allocate(4).order(ENDIANNESS).putInt(intToWrite).array();
+                mifare.writePage(startPosition, bytesToWrite);
+            } finally {
+                if (closeMifareOnExit && mifare.isConnected()) mifare.close();
+            }
+        }
+
+
         public static void writeLong(final MifareUltralight mifare, final long longToWrite,
                                      final int startPosition) throws IOException {
         /* Helper method for the NXP NTAG203 / Ultralight that writes a long (also useful for Dates which

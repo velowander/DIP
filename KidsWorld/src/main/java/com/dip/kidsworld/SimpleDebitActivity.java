@@ -141,6 +141,7 @@ public class SimpleDebitActivity extends Activity {
         }
     }
 
+    @Deprecated
     public static class KidsWorldNtag203 {
         /* Helper class for reading and writing Kids World data to/from Mifare Ultralight card
         * The code is specific to the Mifare Ultralight which has 4 byte pages, reading from
