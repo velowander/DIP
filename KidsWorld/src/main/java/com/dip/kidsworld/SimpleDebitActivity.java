@@ -8,10 +8,16 @@ import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.EditText;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,6 +65,22 @@ public class SimpleDebitActivity extends Activity {
         ndefHelper.disableForegroundMode();
     }
 
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+        if (scanResult != null) {
+            try {
+                JSONObject productDef = new JSONObject(scanResult.getContents());
+                String sName = (String) productDef.get("name");
+                String sPrice = (String) productDef.get("price");
+                ((TextView) findViewById(R.id.et_product_name)).setText(sName);
+                ((TextView) findViewById(R.id.et_product_price)).setText(sPrice);
+
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, "Unable to read JSON from QR Code");
+            }
+        }
+    }
+
     @Override
     public void onNewIntent(final Intent intent) {
         Log.d(LOG_TAG, "onNewIntent");
@@ -73,9 +95,9 @@ public class SimpleDebitActivity extends Activity {
             Log.d(LOG_TAG, "Debit Tag mode");
             //TODO add Textwatcher to prevent invalid input
             //Get product name and price to debit from account
-            String sName = ((EditText) findViewById(R.id.et_product_name)).getText().toString();
-            String sPrice = ((EditText) findViewById(R.id.et_product_price)).getText().toString();
-            int price = Integer.parseInt(sPrice);
+            String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
+            String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
+            int price = 100 * Integer.parseInt(sPrice); // convert to pennies
 
             if (kidsCard.buy(new Product(sName, price))) {
                 boolean writeOk = kidsCard.write();
@@ -91,6 +113,11 @@ public class SimpleDebitActivity extends Activity {
             //Read mode
             UpdateUI(kidsCard);
         } //not an NFC tag, nothing to do!
+    }
+
+    public void onClick(View vw) {
+        IntentIntegrator intentIntegrator = new IntentIntegrator(this); // where this is activity ALL_CODE_TYPES
+        intentIntegrator.initiateScan(IntentIntegrator.QR_CODE_TYPES); // or ALL_CODE_TYPES
     }
 
     public void UpdateUI(final KidsCard kidsCard) {
