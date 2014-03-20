@@ -68,14 +68,13 @@ public class SimpleDebitActivity extends Activity {
     }
 
     protected void nfcOperation(Intent intent) {
-        /* Read or write (depending on button_mode) from the NFC card
-        * For this sample application, deducts the constant DEBIT_AMOUNT from */
+        /* Read or write (depending on button_mode) from the NFC card */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         KidsCard kidsCard = new KidsCard(intent);
         if (button_mode.isChecked()) {
             //Debit mode
             Log.d(LOG_TAG, "Debit Tag mode");
-            if (kidsCard.buy(new Product())) {
+            if (kidsCard.buy(new Product(500))) {
                 boolean writeOk = kidsCard.write();
                 if (writeOk) {
                     UpdateUI(kidsCard);
@@ -264,8 +263,14 @@ public class SimpleDebitActivity extends Activity {
     }
 
     public static class Product {
+        private int price;
+
+        public Product(int price) {
+            this.price = price;
+        }
+
         public int getPrice() {
-            return 500;
+            return this.price;
         }
     }
 }
