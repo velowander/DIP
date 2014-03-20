@@ -15,7 +15,7 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/long_testing"
+            android:id="@+id/et_long_testing"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="2"
@@ -27,7 +27,7 @@
         <requestFocus />
 
         <EditText
-            android:id="@+id/position_offset"
+            android:id="@+id/et_position_offset"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"

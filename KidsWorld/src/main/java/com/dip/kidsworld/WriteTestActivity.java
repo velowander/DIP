@@ -82,8 +82,8 @@ public class WriteTestActivity extends Activity {
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode_2);
         Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
         MifareUltralight mifare = MifareUltralight.get(myTag);
-        EditText editOffset = (EditText) findViewById(R.id.position_offset);
-        EditText editLong = (EditText) findViewById(R.id.long_testing);
+        EditText editOffset = (EditText) findViewById(R.id.et_position_offset);
+        EditText editLong = (EditText) findViewById(R.id.et_long_testing);
         long longTesting;
         int offset;
         try {

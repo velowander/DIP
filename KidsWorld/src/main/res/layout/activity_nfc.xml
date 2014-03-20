@@ -10,6 +10,23 @@
 
         <TableRow android:layout_weight="0.5">
 
+            <EditText
+                android:id="@+id/et_product_name"
+                style="@style/EntryForm"
+                android:layout_weight="1"
+                android:hint="product name" />
+
+            <EditText
+                android:id="@+id/et_product_price"
+                style="@style/EntryForm"
+                android:layout_weight="0.5"
+                android:hint="price"
+                android:inputType="number"
+                android:numeric="integer" />
+        </TableRow>
+
+        <TableRow android:layout_weight="0.5">
+
             <TextView
                 style="@style/EntryForm"
                 android:layout_weight="0.5"

@@ -8,6 +8,7 @@ import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -63,18 +64,20 @@ public class SimpleDebitActivity extends Activity {
         Log.d(LOG_TAG, "onNewIntent");
         setIntent(intent);
 
-        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction()))
-            nfcOperation(intent); //not an NFC tag, nothing to do!
-    }
-
-    protected void nfcOperation(Intent intent) {
+        if (!NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) return;
         /* Read or write (depending on button_mode) from the NFC card */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         KidsCard kidsCard = new KidsCard(intent);
         if (button_mode.isChecked()) {
             //Debit mode
             Log.d(LOG_TAG, "Debit Tag mode");
-            if (kidsCard.buy(new Product(500))) {
+            //TODO add Textwatcher to prevent invalid input
+            //Get product name and price to debit from account
+            String sName = ((EditText) findViewById(R.id.et_product_name)).getText().toString();
+            String sPrice = ((EditText) findViewById(R.id.et_product_price)).getText().toString();
+            int price = Integer.parseInt(sPrice);
+
+            if (kidsCard.buy(new Product(sName, price))) {
                 boolean writeOk = kidsCard.write();
                 if (writeOk) {
                     UpdateUI(kidsCard);
@@ -87,7 +90,7 @@ public class SimpleDebitActivity extends Activity {
         } else {
             //Read mode
             UpdateUI(kidsCard);
-        }
+        } //not an NFC tag, nothing to do!
     }
 
     public void UpdateUI(final KidsCard kidsCard) {
@@ -263,10 +266,16 @@ public class SimpleDebitActivity extends Activity {
     }
 
     public static class Product {
+        private String name;
         private int price;
 
-        public Product(int price) {
+        public Product(String name, int price) {
+            this.name = name;
             this.price = price;
+        }
+
+        public String getName() {
+            return this.name;
         }
 
         public int getPrice() {
