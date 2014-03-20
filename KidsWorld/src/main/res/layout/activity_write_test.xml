@@ -7,7 +7,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.dip.kidsworld.WriteTest">
+    tools:context="com.dip.kidsworld.WriteTestActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="2"
-            android:hint="Number to encode"
+            android:hint="@string/hint_number_to_encode"
             android:inputType="number"
             android:numeric="integer"
             android:text="@string/testing_number_default" />
@@ -31,7 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Position"
+            android:hint="@string/hint_offset"
             android:inputType="number"
             android:numeric="integer"
             android:text="@string/offset_default" />

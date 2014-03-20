@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="button_mode_write">WRITE</string>
+    <string name="hint_number_to_encode">Number to Encode</string>
+    <string name="hint_offset">Offset</string>
+    <string name="offset_default">12</string>
+    <string name="title_activity_write_test">Write Test</string>
+</resources>

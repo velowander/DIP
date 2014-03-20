@@ -17,9 +17,9 @@ import android.widget.ToggleButton;
 import java.io.IOException;
 
 
-public class WriteTest extends Activity {
+public class WriteTestActivity extends Activity {
 
-    private static final String LOG_TAG = WriteTest.class.getSimpleName();
+    private static final String LOG_TAG = WriteTestActivity.class.getSimpleName();
     private static Utils.NdefHelper ndefHelper;
 
     @Override

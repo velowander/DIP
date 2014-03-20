@@ -5,8 +5,6 @@
     <string name="action_settings">Settings</string>
     <string name="button_mode_debit">DEBIT</string>
     <string name="button_mode_read">READ</string>
-    <string name="button_mode_write">WRITE</string>
-    <string name="offset_default">12</string>
     <string name="testing_number_default">0</string>
     <string name="tvw_balance">Balance</string>
     <string name="tvw_name">Name</string>
@@ -15,6 +13,6 @@
     <string name="tvw_last_purchase">Last purchase</string>
     <string name="tvw_mode">Mode</string>
     <string name="title_activity_nfc">NFC Read / Debit</string>
-    <string name="title_activity_write_test">Write Test</string>
+    <string name="hello_world">Hello world!</string>
 
 </resources>
