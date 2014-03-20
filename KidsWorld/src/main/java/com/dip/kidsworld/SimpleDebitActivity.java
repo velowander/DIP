@@ -96,7 +96,7 @@ public class SimpleDebitActivity extends Activity {
         Log.d(LOG_TAG, "Update UI from read");
         try {
             TextView tvwClientId = (TextView) findViewById(R.id.client_id);
-            tvwClientId.setText(String.valueOf(kidsCard.clientId));
+            tvwClientId.setText(String.valueOf(kidsCard.getClientId()));
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
@@ -143,7 +143,7 @@ public class SimpleDebitActivity extends Activity {
         private static final short OFFSET_CHECKIN = 14;// Uses all 4 pages for 2 dates (stored as doubles)
         private static final short OFFSET_DEBIT_TIME = 19;
 
-        private Intent nfcIntent;
+        private MifareUltralight mifare;
 
         private int clientId;
         private String name;
@@ -153,10 +153,14 @@ public class SimpleDebitActivity extends Activity {
         private Utils.Int64Date checkOutDate;
 
         public KidsCard(Intent intent) {
+            /* This represents a single contact with a KidsCard NFC card, it should remain in scope only
+            * during the activity's onNewIntent() as reader scans the card. Repeated scans will create new
+            * kidsCard instances.
+            * Don't write() to the card outside onNewIntent(), as you could overwrite data on a different
+            * card accidentally (or the original card may no longer be present) */
             Log.d(LOG_TAG, "Native Byte Ordering is Little Endian? " + String.valueOf(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN));
-            this.nfcIntent = intent;
             Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            MifareUltralight mifare = MifareUltralight.get(myTag);
+            this.mifare = MifareUltralight.get(myTag);
             try {
                 mifare.connect();
                 int id = ByteBuffer.wrap(mifare.readPages(OFFSET_ID)).order(Utils.Ntag203.ENDIANNESS).getInt();
@@ -235,16 +239,13 @@ public class SimpleDebitActivity extends Activity {
             /* intent - pass onNewIntent from scanning NFC tag, saves kidsCard fields to card
             * times are stored as longs using Int64 conversion for .NET compatibility (Int64Date class)
             * Note: many fields are commented out as only the Windows .NET version modifies them */
-            Tag myTag = nfcIntent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            MifareUltralight ultralight = MifareUltralight.get(myTag);
-
             try {
-                ultralight.connect();
-                ultralight.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(this.balance).array());
+                this.mifare.connect();
+                this.mifare.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(this.balance).array());
                 Log.d(LOG_TAG, "Saving balance of " + getBalance());
                 Date date = new Utils.Int64Date();
                 Log.d(LOG_TAG, "write: date is: " + date.toString());
-                Utils.Ntag203.writeLong(ultralight, new Utils.Int64Date().getTicks(), OFFSET_DEBIT_TIME);
+                Utils.Ntag203.writeLong(this.mifare, new Utils.Int64Date().getTicks(), OFFSET_DEBIT_TIME);
                 Log.d(LOG_TAG, "Saved Debit Ticks (long): " + String.valueOf(date.getTime()));
                 Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
                 return true;
@@ -252,7 +253,7 @@ public class SimpleDebitActivity extends Activity {
                 Log.e(LOG_TAG, "IOException while writing MifareUltralight...", e);
             } finally {
                 try {
-                    ultralight.close();
+                    this.mifare.close();
                     Log.i(LOG_TAG, "Closed Mifare Ultralight write - success!!");
                 } catch (IOException e) {
                     Log.e(LOG_TAG, "IOException while closing MifareUltralight...", e);
