@@ -14,7 +14,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -86,44 +85,16 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
 
     @Override
     public void onNewIntent(final Intent intent) {
-        final byte READ_NFC_LOADER = 0;
-        final byte DEBIT_NFC_LOADER = 1;
 
         Log.d(LOG_TAG, "onNewIntent");
         setIntent(intent);
 
-        if (!NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
-            return;
-        } else getLoaderManager().initLoader(READ_NFC_LOADER, null, this).forceLoad();
-        /* Read or write (depending on button_mode) from the NFC card */
-
-        /*
-        if (button_mode.isChecked()) {
-            //Debit mode
-            Log.d(LOG_TAG, "Debit Tag mode");
-            //Get product name and price to debit from account
-            String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
-            String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
-            int price = 100 * Integer.parseInt(sPrice); // convert to pennies
-
-            if (kidsCard.buy(new Product(sName, price))) {
-                boolean writeOk = kidsCard.write();
-                if (writeOk) {
-                    UpdateUI(kidsCard);
-                    Toast.makeText(this, "Debit complete", Toast.LENGTH_LONG).show();
-                } else
-                    Toast.makeText(this, "Unable to process transaction", Toast.LENGTH_LONG).show();
-            }
-            //Card doesn't have enough money!!
-            else Toast.makeText(this, "Insufficient balance!", Toast.LENGTH_LONG).show();
-        } else {
-            //Read mode
-            UpdateUI(kidsCard);
-        } //not an NFC tag, nothing to do!
-        */
+        if (!NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) return;
+        getLoaderManager().restartLoader(0, null, this).forceLoad();
     }
 
     public void onClick(View vw) {
+        /* Google's zxing wrapper for open source app Barcode Scanner available on f-droid and Google Play */
         IntentIntegrator intentIntegrator = new IntentIntegrator(this); // where this is activity ALL_CODE_TYPES
         intentIntegrator.initiateScan(IntentIntegrator.QR_CODE_TYPES); // or ALL_CODE_TYPES
     }
@@ -167,41 +138,27 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
-        Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
+        //Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public Loader onCreateLoader(int i, Bundle bundle) {
         Log.d(LOG_TAG, "in onCreateLoader()");
-        return new KidsCardLoader(this, getIntent());
+        /* Read or write (depending on button_mode) from the NFC card */
+        ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
+        if (button_mode.isChecked()) {
+            String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
+            String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
+            int price = 100 * Integer.parseInt(sPrice); // convert to pennies
+            return new CardLoader(this, getIntent(), new Product(sName, price));
+        } else return new CardLoader(this, getIntent());
     }
 
     @Override
     public void onLoadFinished(Loader loader, Object o) {
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         KidsCard kidsCard = (KidsCard) o;
-        if (button_mode.isChecked()) {
-            //Debit mode
-            Log.d(LOG_TAG, "Debit Tag mode");
-            //Get product name and price to debit from account
-            String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
-            String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
-            int price = 100 * Integer.parseInt(sPrice); // convert to pennies
-
-            if (kidsCard.buy(new Product(sName, price))) {
-                boolean writeOk = kidsCard.write();
-                if (writeOk) {
-                    UpdateUI(kidsCard);
-                    Toast.makeText(this, "Debit complete", Toast.LENGTH_LONG).show();
-                } else
-                    Toast.makeText(this, "Unable to process transaction", Toast.LENGTH_LONG).show();
-            }
-            //Card doesn't have enough money!!
-            else Toast.makeText(this, "Insufficient balance!", Toast.LENGTH_LONG).show();
-        } else {
-            //Read mode
-            UpdateUI(kidsCard);
-        } //not an NFC tag, nothing to do!
+        UpdateUI(kidsCard);
     }
 
     @Override
@@ -209,21 +166,34 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         //Not used
     }
 
-    public static class KidsCardLoader extends AsyncTaskLoader<KidsCard> {
+    public static class CardLoader extends AsyncTaskLoader<KidsCard> {
 
-        public final String LOG_TAG = KidsCardLoader.class.getSimpleName();
+        public final String LOG_TAG = CardLoader.class.getSimpleName();
         Intent intent;
+        Product product;
 
-        public KidsCardLoader(Context context, Intent intent) {
+        public CardLoader(Context context, Intent intent) {
+            /* Constructor to read card only */
             super(context);
             this.intent = intent;
-            Log.d(LOG_TAG, "constructing KidsCardLoader");
+        }
+
+        public CardLoader(Context context, Intent intent, Product product) {
+            /* Constructor for card debit (purchase) */
+            super(context);
+            this.intent = intent;
+            this.product = product;
         }
 
         @Override
         public KidsCard loadInBackground() {
             Log.d(LOG_TAG, "loadInBackground()");
-            return new KidsCard(intent);
+            if (this.product == null) return new KidsCard(intent); //read only mode
+            //Still here? Debit mode
+            Log.d(LOG_TAG, "price: " + String.valueOf(product.price));
+            KidsCard kidsCard = new KidsCard(intent);
+            if (kidsCard.buy(product)) kidsCard.write();
+            return kidsCard;
         }
     }
 
