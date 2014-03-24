@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.content.Intent;
-import android.content.Loader;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
@@ -142,68 +141,44 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
     }
 
     @Override
-    public Loader onCreateLoader(int i, Bundle bundle) {
+    public android.content.Loader onCreateLoader(int i, Bundle bundle) {
         Log.d(LOG_TAG, "in onCreateLoader()");
         /* Read or write (depending on button_mode) from the NFC card */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         if (button_mode.isChecked()) {
             String sName = ((EditText) findViewById(R.id.et_product_name)).getText().toString();
             String sPrice = ((EditText) findViewById(R.id.et_product_price)).getText().toString();
-            int price = 0;
+            int price;
             try {
                 price = 100 * Integer.parseInt(sPrice); // convert to pennies
             } catch (NumberFormatException e) {
                 Log.i(LOG_TAG, "No valid product - read card only");
-                return new CardLoader(this, getIntent());
+                return new KidsCard.Loader(this, getIntent());
             }
-            return new CardLoader(this, getIntent(), new Product(sName, price));
-        } else return new CardLoader(this, getIntent());
+            return new KidsCard.Loader(this, getIntent(), new Product(sName, price));
+        } else return new KidsCard.Loader(this, getIntent());
     }
 
     @Override
-    public void onLoadFinished(Loader loader, Object o) {
-        ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
+    public void onLoadFinished(android.content.Loader loader, Object o) {
         KidsCard kidsCard = (KidsCard) o;
         UpdateUI(kidsCard);
     }
 
     @Override
-    public void onLoaderReset(Loader loader) {
+    public void onLoaderReset(android.content.Loader loader) {
         //Not used
     }
 
-    public static class CardLoader extends AsyncTaskLoader<KidsCard> {
-
-        public final String LOG_TAG = CardLoader.class.getSimpleName();
-        Intent intent;
-        Product product;
-
-        public CardLoader(Context context, Intent intent) {
-            /* Constructor to read card only */
-            super(context);
-            this.intent = intent;
-        }
-
-        public CardLoader(Context context, Intent intent, Product product) {
-            /* Constructor for card debit (purchase) */
-            super(context);
-            this.intent = intent;
-            this.product = product;
-        }
-
-        @Override
-        public KidsCard loadInBackground() {
-            Log.d(LOG_TAG, "loadInBackground()");
-            if (this.product == null) return new KidsCard(intent); //read only mode
-            //Still here? Debit mode
-            Log.d(LOG_TAG, "price: " + String.valueOf(product.price));
-            KidsCard kidsCard = new KidsCard(intent);
-            if (kidsCard.buy(product)) kidsCard.write();
-            return kidsCard;
-        }
-    }
-
     public static class KidsCard {
+        /* This represents a single contact with a KidsCard NFC card, it should remain in scope only
+        * during the activity's onNewIntent() as reader scans the card. Repeated scans will create new
+        * kidsCard instances.
+        * Included Loader class (extends AsyncTaskLoader) reads and writes to NFC cards on a worker thread
+        * Don't write() to the card outside onNewIntent(), as you could overwrite data on a different
+        * card accidentally (or the original card may no longer be present)
+        * * times are stored as Utils.Int64Date (longs) for .NET compatibility */
+
         private static final String LOG_TAG = KidsCard.class.getSimpleName();
 
         //Constants for reading and writing to Mifare NTAG203
@@ -223,11 +198,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         private Utils.Int64Date checkOutDate;
 
         public KidsCard(Intent intent) {
-            /* This represents a single contact with a KidsCard NFC card, it should remain in scope only
-            * during the activity's onNewIntent() as reader scans the card. Repeated scans will create new
-            * kidsCard instances.
-            * Don't write() to the card outside onNewIntent(), as you could overwrite data on a different
-            * card accidentally (or the original card may no longer be present) */
+            /* intent - pass onNewIntent from scanning NFC tag, saves kidsCard fields to card */
             Log.d(LOG_TAG, "Native Byte Ordering is Little Endian? " + String.valueOf(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN));
             Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
             this.mifare = MifareUltralight.get(myTag);
@@ -277,7 +248,26 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             if (balance >= price) {
                 balance -= price;
                 lastPurchaseDate = new Utils.Int64Date();
-                return true;
+                try {
+                    this.mifare.connect();
+                    this.mifare.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(this.balance).array());
+                    Log.d(LOG_TAG, "Saving balance of " + getBalance());
+                    Date date = new Utils.Int64Date();
+                    Log.d(LOG_TAG, "write: date is: " + date.toString());
+                    Utils.Ntag203.writeLong(this.mifare, new Utils.Int64Date().getTicks(), OFFSET_DEBIT_TIME);
+                    Log.d(LOG_TAG, "Saved Debit Ticks (long): " + String.valueOf(date.getTime()));
+                    Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
+                    return true;
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "IOException while writing MifareUltralight...", e);
+                } finally {
+                    try {
+                        this.mifare.close();
+                        Log.i(LOG_TAG, "Closed Mifare Ultralight write - success!!");
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG, "IOException while closing MifareUltralight...", e);
+                    }
+                }
             }
             return false;
         }
@@ -305,30 +295,38 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             return lastPurchaseDate;
         }
 
-        public boolean write() {
-            /* intent - pass onNewIntent from scanning NFC tag, saves kidsCard fields to card
-            * times are stored as Utils.Int64Date (longs) for .NET compatibility */
-            try {
-                this.mifare.connect();
-                this.mifare.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(this.balance).array());
-                Log.d(LOG_TAG, "Saving balance of " + getBalance());
-                Date date = new Utils.Int64Date();
-                Log.d(LOG_TAG, "write: date is: " + date.toString());
-                Utils.Ntag203.writeLong(this.mifare, new Utils.Int64Date().getTicks(), OFFSET_DEBIT_TIME);
-                Log.d(LOG_TAG, "Saved Debit Ticks (long): " + String.valueOf(date.getTime()));
-                Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
-                return true;
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "IOException while writing MifareUltralight...", e);
-            } finally {
-                try {
-                    this.mifare.close();
-                    Log.i(LOG_TAG, "Closed Mifare Ultralight write - success!!");
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "IOException while closing MifareUltralight...", e);
-                }
+        public static class Loader extends AsyncTaskLoader<KidsCard> {
+
+            /* Use this helper class to read and write to the NFC tag on a worker thread */
+
+            public final String LOG_TAG = Loader.class.getSimpleName();
+            Intent intent;
+            Product product;
+
+            public Loader(Context context, Intent intent) {
+                /* Constructor to read card only */
+                super(context);
+                this.intent = intent;
             }
-            return false;
+
+            public Loader(Context context, Intent intent, Product product) {
+                /* Constructor for card debit (purchase) */
+                super(context);
+                this.intent = intent;
+                this.product = product;
+            }
+
+            @Override
+            public KidsCard loadInBackground() {
+                /* instantiates KidsCard (reads NFC) and optionally debits supplied KidsCard */
+                Log.d(LOG_TAG, "loadInBackground()");
+                if (this.product == null) return new KidsCard(intent); //read only mode
+                //Still here? Debit mode
+                Log.d(LOG_TAG, "price: " + String.valueOf(product.price));
+                KidsCard kidsCard = new KidsCard(intent);
+                kidsCard.buy(product);
+                return kidsCard;
+            }
         }
     }
 
