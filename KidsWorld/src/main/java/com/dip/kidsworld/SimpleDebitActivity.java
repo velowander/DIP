@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.content.Intent;
+import android.content.Loader;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
@@ -141,7 +142,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
     }
 
     @Override
-    public android.content.Loader onCreateLoader(int i, Bundle bundle) {
+    public Loader onCreateLoader(int i, Bundle bundle) {
         Log.d(LOG_TAG, "in onCreateLoader()");
         /* Read or write (depending on button_mode) from the NFC card */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
@@ -153,10 +154,10 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                 price = 100 * Integer.parseInt(sPrice); // convert to pennies
             } catch (NumberFormatException e) {
                 Log.i(LOG_TAG, "No valid product - read card only");
-                return new KidsCard.Loader(this, getIntent());
+                return new KidsCard.CardLoader(this, getIntent());
             }
-            return new KidsCard.Loader(this, getIntent(), new Product(sName, price));
-        } else return new KidsCard.Loader(this, getIntent());
+            return new KidsCard.CardLoader(this, getIntent(), new Product(sName, price));
+        } else return new KidsCard.CardLoader(this, getIntent());
     }
 
     @Override
@@ -174,7 +175,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         /* This represents a single contact with a KidsCard NFC card, it should remain in scope only
         * during the activity's onNewIntent() as reader scans the card. Repeated scans will create new
         * kidsCard instances.
-        * Included Loader class (extends AsyncTaskLoader) reads and writes to NFC cards on a worker thread
+        * Included CardLoader class (extends AsyncTaskLoader) reads and writes to NFC cards on a worker thread
         * Don't write() to the card outside onNewIntent(), as you could overwrite data on a different
         * card accidentally (or the original card may no longer be present)
         * * times are stored as Utils.Int64Date (longs) for .NET compatibility */
@@ -295,22 +296,24 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             return lastPurchaseDate;
         }
 
-        public static class Loader extends AsyncTaskLoader<KidsCard> {
+        public static class CardLoader extends AsyncTaskLoader<KidsCard> {
 
             /* Use this helper class to read and write to the NFC tag on a worker thread */
 
-            public final String LOG_TAG = Loader.class.getSimpleName();
+            public final String LOG_TAG = CardLoader.class.getSimpleName();
             Intent intent;
             Product product;
 
-            public Loader(Context context, Intent intent) {
-                /* Constructor to read card only */
+            public CardLoader(Context context, Intent intent) {
+                /* Constructor to read card only
+                * intent: NFC tag intent from Activity.onNewIntent() */
                 super(context);
                 this.intent = intent;
             }
 
-            public Loader(Context context, Intent intent, Product product) {
-                /* Constructor for card debit (purchase) */
+            public CardLoader(Context context, Intent intent, Product product) {
+                /* Constructor for card debit (purchase). In balance is sufficient, will debit card funds
+                * to purchase product */
                 super(context);
                 this.intent = intent;
                 this.product = product;
