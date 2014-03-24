@@ -1,8 +1,12 @@
 package com.dip.kidsworld;
 
 import android.app.Activity;
+import android.app.LoaderManager;
 import android.app.PendingIntent;
+import android.content.AsyncTaskLoader;
+import android.content.Context;
 import android.content.Intent;
+import android.content.Loader;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
@@ -24,11 +28,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Date;
 
-public class SimpleDebitActivity extends Activity {
+public class SimpleDebitActivity extends Activity implements LoaderManager.LoaderCallbacks {
 
     private static final String LOG_TAG = SimpleDebitActivity.class.getSimpleName();
     private static Utils.NdefHelper ndefHelper;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,17 +86,21 @@ public class SimpleDebitActivity extends Activity {
 
     @Override
     public void onNewIntent(final Intent intent) {
+        final byte READ_NFC_LOADER = 0;
+        final byte DEBIT_NFC_LOADER = 1;
+
         Log.d(LOG_TAG, "onNewIntent");
         setIntent(intent);
 
-        if (!NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) return;
+        if (!NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
+            return;
+        } else getLoaderManager().initLoader(READ_NFC_LOADER, null, this).forceLoad();
         /* Read or write (depending on button_mode) from the NFC card */
-        ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
-        KidsCard kidsCard = new KidsCard(intent);
+
+        /*
         if (button_mode.isChecked()) {
             //Debit mode
             Log.d(LOG_TAG, "Debit Tag mode");
-            //TODO add Textwatcher to prevent invalid input
             //Get product name and price to debit from account
             String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
             String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
@@ -113,6 +120,7 @@ public class SimpleDebitActivity extends Activity {
             //Read mode
             UpdateUI(kidsCard);
         } //not an NFC tag, nothing to do!
+        */
     }
 
     public void onClick(View vw) {
@@ -160,6 +168,63 @@ public class SimpleDebitActivity extends Activity {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
         Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public Loader onCreateLoader(int i, Bundle bundle) {
+        Log.d(LOG_TAG, "in onCreateLoader()");
+        return new KidsCardLoader(this, getIntent());
+    }
+
+    @Override
+    public void onLoadFinished(Loader loader, Object o) {
+        ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
+        KidsCard kidsCard = (KidsCard) o;
+        if (button_mode.isChecked()) {
+            //Debit mode
+            Log.d(LOG_TAG, "Debit Tag mode");
+            //Get product name and price to debit from account
+            String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
+            String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
+            int price = 100 * Integer.parseInt(sPrice); // convert to pennies
+
+            if (kidsCard.buy(new Product(sName, price))) {
+                boolean writeOk = kidsCard.write();
+                if (writeOk) {
+                    UpdateUI(kidsCard);
+                    Toast.makeText(this, "Debit complete", Toast.LENGTH_LONG).show();
+                } else
+                    Toast.makeText(this, "Unable to process transaction", Toast.LENGTH_LONG).show();
+            }
+            //Card doesn't have enough money!!
+            else Toast.makeText(this, "Insufficient balance!", Toast.LENGTH_LONG).show();
+        } else {
+            //Read mode
+            UpdateUI(kidsCard);
+        } //not an NFC tag, nothing to do!
+    }
+
+    @Override
+    public void onLoaderReset(Loader loader) {
+        //Not used
+    }
+
+    public static class KidsCardLoader extends AsyncTaskLoader<KidsCard> {
+
+        public final String LOG_TAG = KidsCardLoader.class.getSimpleName();
+        Intent intent;
+
+        public KidsCardLoader(Context context, Intent intent) {
+            super(context);
+            this.intent = intent;
+            Log.d(LOG_TAG, "constructing KidsCardLoader");
+        }
+
+        @Override
+        public KidsCard loadInBackground() {
+            Log.d(LOG_TAG, "loadInBackground()");
+            return new KidsCard(intent);
+        }
     }
 
     public static class KidsCard {
