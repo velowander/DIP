@@ -13,6 +13,7 @@ import android.nfc.tech.MifareUltralight;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
@@ -35,13 +36,13 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_nfc);
+        setContentView(R.layout.activity_simple_debit);
 
         super.onCreate(savedInstanceState);
 
         Log.d(LOG_TAG, "onCreate");
 
-        setContentView(R.layout.activity_nfc);
+        setContentView(R.layout.activity_simple_debit);
 
         // initialize NFC
         NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
@@ -138,7 +139,6 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUI Exception", e);
         }
-        //Toast.makeText(this, "Read complete", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -147,9 +147,15 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         /* Read or write (depending on button_mode) from the NFC card */
         ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode);
         if (button_mode.isChecked()) {
-            String sName = ((TextView) findViewById(R.id.et_product_name)).getText().toString();
-            String sPrice = ((TextView) findViewById(R.id.et_product_price)).getText().toString();
-            int price = 100 * Integer.parseInt(sPrice); // convert to pennies
+            String sName = ((EditText) findViewById(R.id.et_product_name)).getText().toString();
+            String sPrice = ((EditText) findViewById(R.id.et_product_price)).getText().toString();
+            int price = 0;
+            try {
+                price = 100 * Integer.parseInt(sPrice); // convert to pennies
+            } catch (NumberFormatException e) {
+                Log.i(LOG_TAG, "No valid product - read card only");
+                return new CardLoader(this, getIntent());
+            }
             return new CardLoader(this, getIntent(), new Product(sName, price));
         } else return new CardLoader(this, getIntent());
     }
