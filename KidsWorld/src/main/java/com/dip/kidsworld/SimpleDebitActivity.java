@@ -331,8 +331,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
 
         public boolean write() {
             /* intent - pass onNewIntent from scanning NFC tag, saves kidsCard fields to card
-            * times are stored as longs using Int64 conversion for .NET compatibility (Int64Date class)
-            * Note: many fields are commented out as only the Windows .NET version modifies them */
+            * times are stored as Utils.Int64Date (longs) for .NET compatibility */
             try {
                 this.mifare.connect();
                 this.mifare.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(this.balance).array());
