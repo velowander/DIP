@@ -14,5 +14,6 @@
     <string name="tvw_mode">Mode</string>
     <string name="title_activity_nfc">NFC Read / Debit</string>
     <string name="hello_world">Hello world!</string>
+    <string name="title_activity_gate">GateActivity</string>
 
 </resources>

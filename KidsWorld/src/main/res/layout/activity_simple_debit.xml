@@ -30,7 +30,7 @@
             android:text="QR" />
     </LinearLayout>
 
-    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <TableLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -117,35 +117,6 @@
 
         </TableRow>
 
-        <TableRow android:layout_weight="1">
-
-            <TextView
-                style="@style/debit_form"
-                android:layout_weight="0.5"
-                android:text="@string/tvw_check_in" />
-
-            <TextView
-                android:id="@+id/check_in"
-                style="@style/debit_form"
-                android:layout_weight="1"
-                android:freezesText="true" />
-
-        </TableRow>
-
-        <TableRow android:layout_weight="1">
-
-            <TextView
-                style="@style/debit_form"
-                android:layout_weight="0.5"
-                android:text="@string/tvw_check_out" />
-
-            <TextView
-                android:id="@+id/check_out"
-                style="@style/debit_form"
-                android:layout_weight="1"
-                android:freezesText="true" />
-
-        </TableRow>
     </TableLayout>
 
 </LinearLayout>

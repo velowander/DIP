@@ -26,7 +26,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Date;
 
 public class SimpleDebitActivity extends Activity implements LoaderManager.LoaderCallbacks {
 
@@ -100,44 +99,32 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         intentIntegrator.initiateScan(IntentIntegrator.QR_CODE_TYPES); // or ALL_CODE_TYPES
     }
 
-    public void UpdateUI(final KidsCard kidsCard) {
+    public void UpdateUi(final KidsCard kidsCard) {
         //intent - pass from onNewIntent, presence of NFC tag
         Log.d(LOG_TAG, "Update UI from read");
         try {
             TextView tvwClientId = (TextView) findViewById(R.id.client_id);
             tvwClientId.setText(String.valueOf(kidsCard.getClientId()));
         } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception", e);
+            Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwName = (TextView) findViewById(R.id.client_name);
             tvwName.setText(kidsCard.name);
         } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception", e);
+            Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwBalance = (TextView) findViewById(R.id.balance);
             tvwBalance.setText(String.valueOf(kidsCard.getBalance() / 100.));
         } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception", e);
+            Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwDebit = (TextView) findViewById(R.id.last_purchase);
             tvwDebit.setText(kidsCard.getLastPurchaseDate().toString());
         } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception", e);
-        }
-        try {
-            TextView tvwCheckIn = (TextView) findViewById(R.id.check_in);
-            tvwCheckIn.setText(kidsCard.getCheckInDate().toString());
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception", e);
-        }
-        try {
-            TextView tvwCheckOut = (TextView) findViewById(R.id.check_out);
-            tvwCheckOut.setText(kidsCard.getCheckOutDate().toString());
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "UpdateUI Exception", e);
+            Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
     }
 
@@ -163,7 +150,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
     @Override
     public void onLoadFinished(android.content.Loader loader, Object o) {
         KidsCard kidsCard = (KidsCard) o;
-        UpdateUI(kidsCard);
+        UpdateUi(kidsCard);
     }
 
     @Override
@@ -244,7 +231,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             }
         }
 
-        public boolean buy(Product product) {
+        public boolean buy(Product product) throws IOException {
             int price = product.getPrice();
             if (balance >= price) {
                 balance -= price;
@@ -253,24 +240,34 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                     this.mifare.connect();
                     this.mifare.writePage(OFFSET_BALANCE, ByteBuffer.allocate(4).order(Utils.Ntag203.ENDIANNESS).putInt(this.balance).array());
                     Log.d(LOG_TAG, "Saving balance of " + getBalance());
-                    Date date = new Utils.Int64Date();
-                    Log.d(LOG_TAG, "write: date is: " + date.toString());
-                    Utils.Ntag203.writeLong(this.mifare, new Utils.Int64Date().getTicks(), OFFSET_DEBIT_TIME);
+                    Utils.Int64Date date = new Utils.Int64Date();
+                    Utils.Ntag203.writeLong(this.mifare, date.getTicks(), OFFSET_DEBIT_TIME);
                     Log.d(LOG_TAG, "Saved Debit Ticks (long): " + String.valueOf(date.getTime()));
                     Log.d(LOG_TAG, "Saved Debit Time: " + date.toString());
                     return true;
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "IOException while writing MifareUltralight...", e);
                 } finally {
-                    try {
-                        this.mifare.close();
-                        Log.i(LOG_TAG, "Closed Mifare Ultralight write - success!!");
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "IOException while closing MifareUltralight...", e);
-                    }
+                    if (this.mifare.isConnected()) this.mifare.close();
                 }
+            } else return false;
+        }
+
+        public void checkIn() throws IOException {
+            try {
+                this.mifare.connect();
+                Utils.Ntag203.writeLong(this.mifare, new Utils.Int64Date().getTicks(), OFFSET_CHECKIN);
+            } finally {
+                if (this.mifare.isConnected()) this.mifare.close();
             }
-            return false;
+        }
+
+        public void checkOut() throws IOException {
+            try {
+                this.mifare.connect();
+                Utils.Ntag203.writeLong(this.mifare, new Utils.Int64Date().getTicks(), OFFSET_CHECKIN + 2);
+            } finally {
+                if (this.mifare.isConnected()) this.mifare.close();
+            }
+
         }
 
         public int getClientId() {
@@ -301,13 +298,19 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             /* Use this helper class to read and write to the NFC tag on a worker thread */
 
             public final String LOG_TAG = CardLoader.class.getSimpleName();
-            Intent intent;
-            Product product;
+            private final byte LOADER_MODE_READ = 0;
+            private final byte LOADER_MODE_DEBIT = 1;
+            private final byte LOADER_MODE_CHECK_IN = 2;
+            private byte loaderMode;
+            private Intent intent;
+            private Product product;
+            private Utils.Int64Date date;
 
             public CardLoader(Context context, Intent intent) {
                 /* Constructor to read card only
                 * intent: NFC tag intent from Activity.onNewIntent() */
                 super(context);
+                loaderMode = LOADER_MODE_READ;
                 this.intent = intent;
             }
 
@@ -315,20 +318,41 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                 /* Constructor for card debit (purchase). In balance is sufficient, will debit card funds
                 * to purchase product */
                 super(context);
+                loaderMode = LOADER_MODE_DEBIT;
                 this.intent = intent;
                 this.product = product;
+            }
+
+            public CardLoader(Context context, Intent intent, Utils.Int64Date date) {
+                super(context);
+                loaderMode = LOADER_MODE_CHECK_IN;
+                this.intent = intent;
+                this.date = date;
             }
 
             @Override
             public KidsCard loadInBackground() {
                 /* instantiates KidsCard (reads NFC) and optionally debits supplied KidsCard */
                 Log.d(LOG_TAG, "loadInBackground()");
-                if (this.product == null) return new KidsCard(intent); //read only mode
-                //Still here? Debit mode
-                Log.d(LOG_TAG, "price: " + String.valueOf(product.price));
-                KidsCard kidsCard = new KidsCard(intent);
-                kidsCard.buy(product);
-                return kidsCard;
+                switch (loaderMode) {
+                    case LOADER_MODE_READ:
+                        return new KidsCard(intent);
+                    case LOADER_MODE_DEBIT:
+                        Log.d(LOG_TAG, "price: " + String.valueOf(product.price));
+                        KidsCard kidsCard = new KidsCard(intent);
+                        try {
+                            kidsCard.buy(product);
+                        } catch (IOException e) {
+                            Log.e(LOG_TAG, "NFC IOException");
+                        }
+                        return kidsCard;
+                    case LOADER_MODE_CHECK_IN:
+                        Log.d(LOG_TAG, "begin check in");
+                        //TODO implement check-in
+                        return null;
+                    default: // same as LOADER_MODE_READ
+                        return new KidsCard(intent);
+                }
             }
         }
     }
