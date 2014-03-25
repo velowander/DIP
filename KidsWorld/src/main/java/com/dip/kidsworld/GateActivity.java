@@ -2,6 +2,7 @@ package com.dip.kidsworld;
 
 import android.app.Activity;
 import android.app.LoaderManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.Loader;
 import android.nfc.NfcAdapter;
@@ -10,17 +11,34 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 
 public class GateActivity extends Activity implements LoaderManager.LoaderCallbacks {
 
     private static final String LOG_TAG = GateActivity.class.getSimpleName();
+    private static Utils.NdefHelper ndefHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gate);
+
+        // initialize NFC
+        NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        PendingIntent nfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, this.getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        ndefHelper = new Utils.NdefHelper(this, nfcAdapter, nfcPendingIntent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ndefHelper.enableForegroundMode();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ndefHelper.disableForegroundMode();
     }
 
     @Override
@@ -53,10 +71,7 @@ public class GateActivity extends Activity implements LoaderManager.LoaderCallba
     public Loader onCreateLoader(int i, Bundle bundle) {
         Log.d(LOG_TAG, "in onCreateLoader()");
         /* Read or write (depending on button_mode) from the NFC card */
-        ToggleButton button_mode = (ToggleButton) findViewById(R.id.button_mode_gate);
-        if (button_mode.isChecked()) {
-            return new SimpleDebitActivity.KidsCard.CardLoader(this, getIntent(), new Utils.Int64Date());
-        } else return new SimpleDebitActivity.KidsCard.CardLoader(this, getIntent());
+        return new SimpleDebitActivity.KidsCard.CardLoader(this, getIntent(), new Utils.Int64Date());
     }
 
     @Override

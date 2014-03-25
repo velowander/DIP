@@ -334,25 +334,30 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             public KidsCard loadInBackground() {
                 /* instantiates KidsCard (reads NFC) and optionally debits supplied KidsCard */
                 Log.d(LOG_TAG, "loadInBackground()");
+                KidsCard kidsCard = new KidsCard(intent);
                 switch (loaderMode) {
                     case LOADER_MODE_READ:
-                        return new KidsCard(intent);
+                        break; //constructor reads data from NFC card, just return the populated object
                     case LOADER_MODE_DEBIT:
-                        Log.d(LOG_TAG, "price: " + String.valueOf(product.price));
-                        KidsCard kidsCard = new KidsCard(intent);
+                        Log.d(LOG_TAG, "buy() price: " + String.valueOf(product.price));
                         try {
                             kidsCard.buy(product);
                         } catch (IOException e) {
-                            Log.e(LOG_TAG, "NFC IOException");
+                            Log.e(LOG_TAG, "buy(): NFC IOException");
                         }
-                        return kidsCard;
+                        break;
                     case LOADER_MODE_CHECK_IN:
                         Log.d(LOG_TAG, "begin check in");
-                        //TODO implement check-in
-                        return null;
-                    default: // same as LOADER_MODE_READ
-                        return new KidsCard(intent);
+                        try {
+                            kidsCard.checkIn();
+                        } catch (IOException e) {
+                            Log.e(LOG_TAG, "checkIn(): NFC IOException");
+                        }
+                        break;
+                    default:
+                        // same as LOADER_MODE_READ
                 }
+                return kidsCard;
             }
         }
     }

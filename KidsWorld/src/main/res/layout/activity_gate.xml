@@ -6,17 +6,6 @@
 
     <TableRow android:layout_weight="1">
 
-        <ToggleButton
-            android:id="@+id/button_mode_gate"
-            style="@style/debit_form"
-            android:layout_weight="1"
-            android:textOff="@string/tvw_check_in"
-            android:textOn="@string/tvw_check_out" />
-
-    </TableRow>
-
-    <TableRow android:layout_weight="1">
-
         <TextView
             style="@style/debit_form"
             android:layout_weight="0.5"
