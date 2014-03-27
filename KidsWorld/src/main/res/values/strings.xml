@@ -14,7 +14,7 @@
     <string name="tvw_mode">Mode</string>
     <string name="title_activity_nfc">NFC Read / Debit</string>
     <string name="title_activity_gate">Entry gate</string>
-    <string name="title_activity_list_host">Test list fragment</string>
+    <string name="title_activity_list_host">Test list</string>
     <string name="price_hint">price</string>
     <string name="product_hint">product</string>
     <string name="button_add">Add</string>

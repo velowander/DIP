@@ -1,0 +1,29 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.dip.kidsworld.GateActivity">
+
+    <item
+        android:id="@+id/menu_gate"
+        android:orderInCategory="0"
+        android:showAsAction="ifRoom"
+        android:title="@string/title_activity_gate" />
+
+    <item
+        android:id="@+id/menu_write_test"
+        android:orderInCategory="1"
+        android:showAsAction="ifRoom"
+        android:title="@string/title_activity_write_test" />
+
+    <item
+        android:id="@+id/menu_list_host"
+        android:orderInCategory="2"
+        android:showAsAction="never"
+        android:title="@string/title_activity_list_host" />
+    <!--
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/action_settings" />
+    -->
+</menu>

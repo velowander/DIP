@@ -14,6 +14,8 @@ import android.nfc.tech.MifareUltralight;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -73,7 +75,37 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         ndefHelper.disableForegroundMode();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.simple_debit, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        switch (item.getItemId()) {
+            case R.id.menu_gate:
+                startActivity(new Intent(this, GateActivity.class));
+                break;
+            case R.id.menu_write_test:
+                startActivity(new Intent(this, WriteTestActivity.class));
+                break;
+            case R.id.menu_list_host:
+                startActivity(new Intent(this, ListHostActivity.class));
+                break;
+            default:
+                //Do Nothing
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        /* Process the product information from the QR code scanner */
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
         if (scanResult != null) {
             try {
@@ -266,6 +298,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             }
         }
 
+        @SuppressWarnings("unused")
         public void checkOut() throws IOException {
             try {
                 this.mifare.connect();
@@ -328,6 +361,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                 this.product = product;
             }
 
+            @SuppressWarnings("unused")
             public CardLoader(Context context, Intent intent, Utils.Int64Date date) {
                 super(context);
                 loaderMode = LOADER_MODE_CHECK_IN;

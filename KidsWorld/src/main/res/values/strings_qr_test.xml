@@ -2,5 +2,5 @@
 <resources>
     <string name="initiate_scan_label">Initiate Scan</string>
     <string name="qr_scan_results_label">QR Scan Results</string>
-    <string name="title_activity_qr">QR Code Test</string>
+    <string name="title_activity_qr">QR Test</string>
 </resources>
