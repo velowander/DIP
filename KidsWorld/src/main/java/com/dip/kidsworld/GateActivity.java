@@ -71,13 +71,13 @@ public class GateActivity extends Activity implements LoaderManager.LoaderCallba
     public Loader onCreateLoader(int i, Bundle bundle) {
         Log.d(LOG_TAG, "in onCreateLoader()");
         /* Read or write (depending on button_mode) from the NFC card */
-        return new SimpleDebitActivity.KidsCard.CardLoader(this, getIntent(), new Utils.Int64Date());
+        return new SimpleDebitActivity.PrepaidCard.CardLoader(this, getIntent(), new Utils.Int64Date());
     }
 
     @Override
     public void onLoadFinished(Loader loader, Object o) {
-        SimpleDebitActivity.KidsCard kidsCard = (SimpleDebitActivity.KidsCard) o;
-        updateUi(kidsCard);
+        SimpleDebitActivity.PrepaidCard prepaidCard = (SimpleDebitActivity.PrepaidCard) o;
+        updateUi(prepaidCard);
     }
 
     @Override
@@ -85,16 +85,16 @@ public class GateActivity extends Activity implements LoaderManager.LoaderCallba
         //Not used
     }
 
-    public void updateUi(final SimpleDebitActivity.KidsCard kidsCard) {
+    public void updateUi(final SimpleDebitActivity.PrepaidCard prepaidCard) {
         try {
             TextView tvwCheckIn = (TextView) findViewById(R.id.check_in);
-            tvwCheckIn.setText(kidsCard.getCheckInDate().toString());
+            tvwCheckIn.setText(prepaidCard.getCheckInDate().toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwCheckOut = (TextView) findViewById(R.id.check_out);
-            tvwCheckOut.setText(kidsCard.getCheckOutDate().toString());
+            tvwCheckOut.setText(prepaidCard.getCheckOutDate().toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUi Exception", e);
         }

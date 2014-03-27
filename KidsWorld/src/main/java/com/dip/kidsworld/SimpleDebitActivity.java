@@ -1,6 +1,7 @@
 package com.dip.kidsworld;
 
 import android.app.Activity;
+import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.app.PendingIntent;
 import android.content.AsyncTaskLoader;
@@ -12,7 +13,10 @@ import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -26,6 +30,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SimpleDebitActivity extends Activity implements LoaderManager.LoaderCallbacks {
 
@@ -99,30 +105,30 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         intentIntegrator.initiateScan(IntentIntegrator.QR_CODE_TYPES); // or ALL_CODE_TYPES
     }
 
-    public void UpdateUi(final KidsCard kidsCard) {
+    public void UpdateUi(final PrepaidCard prepaidCard) {
         //intent - pass from onNewIntent, presence of NFC tag
         Log.d(LOG_TAG, "Update UI from read");
         try {
             TextView tvwClientId = (TextView) findViewById(R.id.client_id);
-            tvwClientId.setText(String.valueOf(kidsCard.getClientId()));
+            tvwClientId.setText(String.valueOf(prepaidCard.getClientId()));
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwName = (TextView) findViewById(R.id.client_name);
-            tvwName.setText(kidsCard.name);
+            tvwName.setText(prepaidCard.name);
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwBalance = (TextView) findViewById(R.id.balance);
-            tvwBalance.setText(String.valueOf(kidsCard.getBalance() / 100.));
+            tvwBalance.setText(String.valueOf(prepaidCard.getBalance() / 100.));
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
         try {
             TextView tvwDebit = (TextView) findViewById(R.id.last_purchase);
-            tvwDebit.setText(kidsCard.getLastPurchaseDate().toString());
+            tvwDebit.setText(prepaidCard.getLastPurchaseDate().toString());
         } catch (Exception e) {
             Log.e(LOG_TAG, "UpdateUi Exception", e);
         }
@@ -141,16 +147,16 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                 price = 100 * Integer.parseInt(sPrice); // convert to pennies
             } catch (NumberFormatException e) {
                 Log.i(LOG_TAG, "No valid product - read card only");
-                return new KidsCard.CardLoader(this, getIntent());
+                return new PrepaidCard.CardLoader(this, getIntent());
             }
-            return new KidsCard.CardLoader(this, getIntent(), new Product(sName, price));
-        } else return new KidsCard.CardLoader(this, getIntent());
+            return new PrepaidCard.CardLoader(this, getIntent(), new Product(sName, price));
+        } else return new PrepaidCard.CardLoader(this, getIntent());
     }
 
     @Override
     public void onLoadFinished(android.content.Loader loader, Object o) {
-        KidsCard kidsCard = (KidsCard) o;
-        UpdateUi(kidsCard);
+        PrepaidCard prepaidCard = (PrepaidCard) o;
+        UpdateUi(prepaidCard);
     }
 
     @Override
@@ -158,16 +164,16 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         //Not used
     }
 
-    public static class KidsCard {
-        /* This represents a single contact with a KidsCard NFC card, it should remain in scope only
+    public static class PrepaidCard {
+        /* This represents a single contact with a PrepaidCard NFC card, it should remain in scope only
         * during the activity's onNewIntent() as reader scans the card. Repeated scans will create new
-        * kidsCard instances.
+        * PrepaidCard instances.
         * Included CardLoader class (extends AsyncTaskLoader) reads and writes to NFC cards on a worker thread
         * Don't write() to the card outside onNewIntent(), as you could overwrite data on a different
         * card accidentally (or the original card may no longer be present)
         * * times are stored as Utils.Int64Date (longs) for .NET compatibility */
 
-        private static final String LOG_TAG = KidsCard.class.getSimpleName();
+        private static final String LOG_TAG = PrepaidCard.class.getSimpleName();
 
         //Constants for reading and writing to Mifare NTAG203
         private static final short OFFSET_ID = 4;
@@ -185,7 +191,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
         private Utils.Int64Date checkInDate;
         private Utils.Int64Date checkOutDate;
 
-        public KidsCard(Intent intent) {
+        public PrepaidCard(Intent intent) {
             /* intent - pass onNewIntent from scanning NFC tag, saves kidsCard fields to card */
             Log.d(LOG_TAG, "Native Byte Ordering is Little Endian? " + String.valueOf(ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN));
             Tag myTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
@@ -293,7 +299,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             return lastPurchaseDate;
         }
 
-        public static class CardLoader extends AsyncTaskLoader<KidsCard> {
+        public static class CardLoader extends AsyncTaskLoader<PrepaidCard> {
 
             /* Use this helper class to read and write to the NFC tag on a worker thread */
 
@@ -304,7 +310,6 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
             private byte loaderMode;
             private Intent intent;
             private Product product;
-            private Utils.Int64Date date;
 
             public CardLoader(Context context, Intent intent) {
                 /* Constructor to read card only
@@ -327,21 +332,21 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                 super(context);
                 loaderMode = LOADER_MODE_CHECK_IN;
                 this.intent = intent;
-                this.date = date;
+                //This class doesn't use the Utils.Int64Date; it triggers loading this constructor
             }
 
             @Override
-            public KidsCard loadInBackground() {
-                /* instantiates KidsCard (reads NFC) and optionally debits supplied KidsCard */
+            public PrepaidCard loadInBackground() {
+                /* instantiates PrepaidCard (reads NFC) and optionally debits supplied PrepaidCard */
                 Log.d(LOG_TAG, "loadInBackground()");
-                KidsCard kidsCard = new KidsCard(intent);
+                PrepaidCard prepaidCard = new PrepaidCard(intent);
                 switch (loaderMode) {
                     case LOADER_MODE_READ:
                         break; //constructor reads data from NFC card, just return the populated object
                     case LOADER_MODE_DEBIT:
                         Log.d(LOG_TAG, "buy() price: " + String.valueOf(product.price));
                         try {
-                            kidsCard.buy(product);
+                            prepaidCard.buy(product);
                         } catch (IOException e) {
                             Log.e(LOG_TAG, "buy(): NFC IOException");
                         }
@@ -349,7 +354,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                     case LOADER_MODE_CHECK_IN:
                         Log.d(LOG_TAG, "begin check in");
                         try {
-                            kidsCard.checkIn();
+                            prepaidCard.checkIn();
                         } catch (IOException e) {
                             Log.e(LOG_TAG, "checkIn(): NFC IOException");
                         }
@@ -357,7 +362,7 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
                     default:
                         // same as LOADER_MODE_READ
                 }
-                return kidsCard;
+                return prepaidCard;
             }
         }
     }
@@ -377,6 +382,58 @@ public class SimpleDebitActivity extends Activity implements LoaderManager.Loade
 
         public int getPrice() {
             return this.price;
+        }
+    }
+
+    public static class HistoryFragment extends ListFragment {
+
+        CardTransactionHistoryAdapter adapter;
+
+        public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+
+            adapter = new CardTransactionHistoryAdapter(getActivity());
+            setListAdapter(adapter);
+        }
+
+        public void add(Product product) {
+            adapter.add(product);
+        }
+
+        public static class CardTransactionHistoryAdapter extends BaseAdapter {
+            private static LayoutInflater inflater;
+            private List<Product> list = new ArrayList<>();
+
+            public CardTransactionHistoryAdapter(Context context) {
+                inflater = LayoutInflater.from(context);
+            }
+
+            public void add(Product product) {
+                list.add(product);
+                notifyDataSetChanged();
+            }
+
+            public int getCount() {
+                return list.size();
+            }
+
+            public Object getItem(int i) {
+                return list.get(i);
+            }
+
+            public long getItemId(int i) {
+                return i;
+            }
+
+            public View getView(int i, View view, ViewGroup viewGroup) {
+                if (view == null) {
+                    Product product = list.get(i);
+                    view = inflater.inflate(R.layout.card_transaction_view, null);
+                    ((TextView) view.findViewById(R.id.tvw_product_name)).setText(product.getName());
+                    ((TextView) view.findViewById(R.id.tvw_product_price)).setText(String.valueOf(product.getPrice()));
+                }
+                return view;
+            }
         }
     }
 }

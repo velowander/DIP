@@ -1,1 +1,1 @@
-include ':KidsWorld', ':SimpleMap'
+include ':KidsWorld', ':SimpleMap', 'ListFragmentTest'

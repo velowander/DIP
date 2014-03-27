@@ -13,7 +13,10 @@
     <string name="tvw_last_purchase">Last purchase</string>
     <string name="tvw_mode">Mode</string>
     <string name="title_activity_nfc">NFC Read / Debit</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="title_activity_gate">GateActivity</string>
+    <string name="title_activity_gate">Entry gate</string>
+    <string name="title_activity_list_host">Test list fragment</string>
+    <string name="price_hint">price</string>
+    <string name="product_hint">product</string>
+    <string name="button_add">Add</string>
 
 </resources>

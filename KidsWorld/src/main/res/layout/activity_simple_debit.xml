@@ -1,49 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <LinearLayout
+    <!-- QR scan product toolbar -->
+    <Button
+        android:id="@+id/btn_qr_scan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:onClick="onClick"
+        android:text="QR" />
+
+    <EditText
+        android:id="@+id/et_product_price"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@id/btn_qr_scan"
+        android:freezesText="true"
+        android:hint="@string/price_hint"
+        android:textSize="24sp" />
+
+    <EditText
+        android:id="@+id/et_product_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_toLeftOf="@id/et_product_price"
+        android:freezesText="true"
+        android:hint="@string/product_hint"
+        android:textSize="24sp">
 
-        <EditText
-            android:id="@+id/et_product_name"
-            style="@style/product_bar"
-            android:layout_weight="0.6"
-            android:freezesText="true"
-            android:hint="name" />
+        <requestFocus />
+    </EditText>
 
-        <EditText
-            android:id="@+id/et_product_price"
-            style="@style/product_bar"
-            android:layout_weight="0.25"
-            android:freezesText="true"
-            android:hint="price" />
-
-        <Button
-            style="@style/product_bar"
-            android:layout_weight="0.15"
-            android:onClick="onClick"
-            android:text="QR" />
-    </LinearLayout>
+    <View
+        android:id="@+id/filler"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:layout_below="@id/et_product_name"
+        android:background="@android:color/holo_blue_dark" />
 
     <TableLayout
+        android:id="@+id/card_data_table"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:layout_below="@id/filler">
 
-        <TableRow>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="10dp"
-                android:layout_weight="1"
-                android:background="@android:color/black" />
-        </TableRow>
-
-        <TableRow android:layout_weight="0.5">
+    <TableRow android:layout_weight="0.5">
 
             <TextView
                 style="@style/debit_form"
@@ -119,4 +123,16 @@
 
     </TableLayout>
 
-</LinearLayout>
+    <!--
+    * The basic ListFragment instance crashes this SimpleDebitActivity but runs fine in ListHostActivity.
+    * Disabled for now.
+    <fragment
+        android:id="@+id/history_fragment"
+        android:name="com.dip.kidsworld.SimpleDebitActivity.HistoryFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/card_data_table"
+        tools:layout="@layout/card_transaction_view" />
+    -->
+
+</RelativeLayout>
