@@ -33,16 +33,20 @@
         </activity>
         <activity
             android:name="com.dip.kidsworld.WriteTestActivity"
-            android:label="@string/title_activity_write_test" />
+            android:label="@string/title_activity_write_test"
+            android:parentActivityName=".SimpleDebitActivity" />
         <activity
             android:name="com.dip.kidsworld.QrActivity"
-            android:label="@string/title_activity_qr" />
+            android:label="@string/title_activity_qr"
+            android:parentActivityName=".SimpleDebitActivity" />
         <activity
             android:name="com.dip.kidsworld.GateActivity"
-            android:label="@string/title_activity_gate" />
+            android:label="@string/title_activity_gate"
+            android:parentActivityName=".SimpleDebitActivity" />
         <activity
             android:name="com.dip.kidsworld.ListHostActivity"
-            android:label="@string/title_activity_list_host" />
+            android:label="@string/title_activity_list_host"
+            android:parentActivityName=".SimpleDebitActivity" />
     </application>
 
 </manifest>
